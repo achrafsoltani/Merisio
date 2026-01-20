@@ -22,6 +22,12 @@ from ..utils.constants import (
 class EntityItem(QGraphicsItem):
     """Graphical representation of an MCD entity."""
 
+    # Class-level setting for showing attributes
+    show_attributes = True
+    HEADER_HEIGHT = 30
+    ATTR_HEIGHT = 20
+    MIN_WIDTH = ENTITY_WIDTH
+
     def __init__(self, entity: Entity, parent=None):
         super().__init__(parent)
         self.entity = entity
@@ -30,15 +36,34 @@ class EntityItem(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
         self.setCursor(Qt.OpenHandCursor)
-        self._width = ENTITY_WIDTH
-        self._height = ENTITY_HEIGHT
         self._links: list["LinkItem"] = []
+        self._update_size()
+
+    def _update_size(self):
+        """Update size based on content."""
+        self.prepareGeometryChange()
+        if EntityItem.show_attributes and self.entity.attributes:
+            self._width = max(self.MIN_WIDTH, self._calculate_width())
+            self._height = self.HEADER_HEIGHT + len(self.entity.attributes) * self.ATTR_HEIGHT + 10
+        else:
+            self._width = self.MIN_WIDTH
+            self._height = ENTITY_HEIGHT
+
+    def _calculate_width(self):
+        """Calculate width based on longest attribute text."""
+        max_len = len(self.entity.name) * 8  # Approximate width for name
+        for attr in self.entity.attributes:
+            # Format: "name : TYPE" or with underline for PK
+            attr_text = f"{attr.name} : {attr.data_type}"
+            if attr.size:
+                attr_text += f"({attr.size})"
+            max_len = max(max_len, len(attr_text) * 7)
+        return max_len + 20  # padding
 
     def boundingRect(self) -> QRectF:
         return QRectF(-self._width / 2, -self._height / 2, self._width, self._height)
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
-        # Draw rounded rectangle
         rect = self.boundingRect()
         path = QPainterPath()
         path.addRoundedRect(rect, 10, 10)
@@ -53,12 +78,49 @@ class EntityItem(QGraphicsItem):
 
         painter.drawPath(path)
 
-        # Draw entity name
+        # Draw entity name (header)
         painter.setPen(Qt.black)
         font = QFont()
         font.setBold(True)
         painter.setFont(font)
-        painter.drawText(rect, Qt.AlignCenter, self.entity.name)
+
+        if EntityItem.show_attributes and self.entity.attributes:
+            # Draw header with name
+            header_rect = QRectF(rect.left(), rect.top(), rect.width(), self.HEADER_HEIGHT)
+            painter.drawText(header_rect, Qt.AlignCenter, self.entity.name)
+
+            # Draw separator line
+            sep_y = rect.top() + self.HEADER_HEIGHT
+            painter.setPen(QPen(QColor(ENTITY_BORDER), 1))
+            painter.drawLine(int(rect.left() + 5), int(sep_y), int(rect.right() - 5), int(sep_y))
+
+            # Draw attributes
+            font.setBold(False)
+            painter.setFont(font)
+            painter.setPen(Qt.black)
+
+            y = rect.top() + self.HEADER_HEIGHT + 5
+            for attr in self.entity.attributes:
+                attr_text = f"{attr.name} : {attr.data_type}"
+                if attr.size:
+                    attr_text += f"({attr.size})"
+
+                text_rect = QRectF(rect.left() + 10, y, rect.width() - 20, self.ATTR_HEIGHT)
+
+                if attr.is_primary_key:
+                    # Underline for primary key
+                    font.setUnderline(True)
+                    painter.setFont(font)
+                    painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, attr_text)
+                    font.setUnderline(False)
+                    painter.setFont(font)
+                else:
+                    painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, attr_text)
+
+                y += self.ATTR_HEIGHT
+        else:
+            # Compact mode - just name centered
+            painter.drawText(rect, Qt.AlignCenter, self.entity.name)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
@@ -111,6 +173,14 @@ class EntityItem(QGraphicsItem):
                 return QPointF(center.x() + dx * hh / dy, center.y() + hh)
             else:
                 return QPointF(center.x() - dx * hh / dy, center.y() - hh)
+
+    def refresh(self):
+        """Refresh the item after entity changes."""
+        self._update_size()
+        self.update()
+        # Update connected links
+        for link_item in self._links:
+            link_item.update_position()
 
 
 class AssociationItem(QGraphicsItem):
@@ -208,6 +278,13 @@ class AssociationItem(QGraphicsItem):
         scale = 1.0 / (abs(dx) / hw + abs(dy) / hh) if (abs(dx) / hw + abs(dy) / hh) > 0 else 1.0
 
         return QPointF(center.x() + dx * scale, center.y() + dy * scale)
+
+    def refresh(self):
+        """Refresh the item after association changes."""
+        self.update()
+        # Update connected links
+        for link_item in self._links:
+            link_item.update_position()
 
 
 class LinkItem(QGraphicsLineItem):

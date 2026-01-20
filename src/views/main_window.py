@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QToolBar, QStatusBar,
     QMessageBox, QFileDialog, QWidget, QVBoxLayout,
-    QHBoxLayout, QPushButton, QLabel
+    QHBoxLayout, QPushButton, QLabel, QCheckBox
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QKeySequence
@@ -64,6 +64,11 @@ class MainWindow(QMainWindow):
         mcd_toolbar.addWidget(self._delete_btn)
 
         mcd_toolbar.addStretch()
+
+        self._show_attrs_check = QCheckBox("Show Attributes")
+        self._show_attrs_check.setChecked(True)
+        self._show_attrs_check.toggled.connect(self._on_toggle_attributes)
+        mcd_toolbar.addWidget(self._show_attrs_check)
 
         self._validate_btn = QPushButton("Validate")
         self._validate_btn.clicked.connect(self._on_validate)
@@ -301,6 +306,10 @@ class MainWindow(QMainWindow):
     def _on_delete_selected(self):
         """Delete selected items."""
         self._mcd_canvas.delete_selected()
+
+    def _on_toggle_attributes(self, checked: bool):
+        """Toggle showing attributes in entities."""
+        self._mcd_canvas.toggle_show_attributes(checked)
 
     def _on_validate(self):
         """Validate the MCD model."""

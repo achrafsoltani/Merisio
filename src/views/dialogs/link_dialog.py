@@ -31,6 +31,13 @@ class LinkDialog(QDialog):
     def _setup_ui(self):
         self.setWindowTitle("Edit Link" if self._is_edit else "Add Link")
         self.setMinimumWidth(350)
+        self.setStyleSheet("""
+            QDialog {
+                border: 2px solid #3daee9;
+                border-radius: 6px;
+                background-color: palette(window);
+            }
+        """)
 
         layout = QVBoxLayout(self)
 

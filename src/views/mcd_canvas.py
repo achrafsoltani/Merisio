@@ -177,7 +177,7 @@ class MCDCanvas(QGraphicsView):
         dialog = EntityDialog(entity=item.entity, parent=self)
         if dialog.exec():
             dialog.get_entity()  # Updates the entity in place
-            item.update()
+            item.refresh()
             self.modified.emit()
 
     def _delete_entity(self, item: EntityItem):
@@ -212,7 +212,7 @@ class MCDCanvas(QGraphicsView):
         dialog = AssociationDialog(association=item.association, parent=self)
         if dialog.exec():
             dialog.get_association()  # Updates the association in place
-            item.update()
+            item.refresh()
             self.modified.emit()
 
     def _delete_association(self, item: AssociationItem):
@@ -421,6 +421,23 @@ class MCDCanvas(QGraphicsView):
         else:
             super().keyPressEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        """Handle double-click to edit items."""
+        item = self.itemAt(event.pos())
+        if isinstance(item, EntityItem):
+            self._edit_entity(item)
+        elif isinstance(item, AssociationItem):
+            self._edit_association(item)
+        elif isinstance(item, LinkItem):
+            self._edit_link(item)
+        elif item and item.parentItem():
+            # Handle clicking on child items (like cardinality labels)
+            parent = item.parentItem()
+            if isinstance(parent, LinkItem):
+                self._edit_link(parent)
+        else:
+            super().mouseDoubleClickEvent(event)
+
     def wheelEvent(self, event):
         """Handle mouse wheel for zooming."""
         if event.modifiers() & Qt.ControlModifier:
@@ -431,3 +448,10 @@ class MCDCanvas(QGraphicsView):
             self.scale(factor, factor)
         else:
             super().wheelEvent(event)
+
+    def toggle_show_attributes(self, show: bool):
+        """Toggle showing attributes in entity items."""
+        EntityItem.show_attributes = show
+        # Refresh all entity items
+        for item in self._entity_items.values():
+            item.refresh()
