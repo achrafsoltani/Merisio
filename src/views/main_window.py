@@ -269,8 +269,8 @@ class MainWindow(QMainWindow):
 
         if file_path:
             # Ensure correct extension
-            if not file_path.endswith(".asi.json"):
-                file_path += ".asi.json"
+            if not file_path.endswith(".asip"):
+                file_path += ".asip"
 
             if FileIO.save_project(self._project, file_path):
                 self._update_title()

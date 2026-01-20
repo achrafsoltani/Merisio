@@ -2,8 +2,8 @@
 
 APP_NAME = "AnalyseSI Modern"
 APP_VERSION = "1.0.0"
-FILE_EXTENSION = ".asi.json"
-FILE_FILTER = "AnalyseSI Projects (*.asi.json);;All Files (*)"
+FILE_EXTENSION = ".asip"
+FILE_FILTER = "AnalyseSI Projects (*.asip);;All Files (*)"
 
 # Data types for dictionary
 DATA_TYPES = [

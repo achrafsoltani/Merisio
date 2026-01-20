@@ -149,7 +149,7 @@ Generates PostgreSQL DDL with:
 ### File Operations
 
 - **New Project** (Ctrl+N) - Create empty project
-- **Open** (Ctrl+O) - Load .asi.json file
+- **Open** (Ctrl+O) - Load .asip file
 - **Save** (Ctrl+S) - Save current project
 - **Save As** (Ctrl+Shift+S) - Save with new name
 
@@ -190,7 +190,7 @@ The validator checks for:
 
 ## File Format
 
-Projects are saved as JSON files with `.asi.json` extension.
+Projects are saved as JSON files with `.asip` extension.
 
 ### Schema
 
