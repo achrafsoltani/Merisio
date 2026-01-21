@@ -4,7 +4,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QPushButton, QLabel, QCheckBox
 )
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QKeySequence, QIcon
+import os
 
 from ..models.project import Project
 from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER
@@ -31,6 +32,12 @@ class MainWindow(QMainWindow):
     def _setup_ui(self):
         """Set up the main UI layout."""
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
+
+        # Set window icon
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "icons", "app_icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+
         self.setMinimumSize(1024, 768)
 
         # Central widget with tabs
@@ -400,7 +407,6 @@ class MainWindow(QMainWindow):
         msgbox.setInformativeText(
             "<p>A modern MERISE database modeling tool.</p>"
             "<p>Built with Python and PySide6.</p>"
-            "<p>Based on the original AnalyseSI project.</p>"
             "<br>"
             "<p><b>Author:</b> Achraf SOLTANI</p>"
         )

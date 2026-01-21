@@ -25,20 +25,26 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
-    app.setOrganizationName("AnalyseSI")
+    app.setOrganizationName("Merisio")
     app.setDesktopFileName("merisio")
 
-    # Set application icon
-    icon_path = os.path.join(os.path.dirname(__file__), "resources", "icons", "app_icon.svg")
-    if os.path.exists(icon_path):
-        app.setWindowIcon(QIcon(icon_path))
+    # Set application icon - try theme icon first, fallback to file
+    app_icon = QIcon.fromTheme("merisio")
+    if app_icon.isNull():
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(base_path, "resources", "icons", "app_icon.png")
+        app_icon = QIcon(icon_path)
 
     # Set application style
     app.setStyle("Fusion")
     app.setStyleSheet(get_stylesheet())
 
     window = MainWindow()
+    window.setWindowIcon(app_icon)
+    app.setWindowIcon(app_icon)
     window.show()
+    window.raise_()
+    window.activateWindow()
 
     sys.exit(app.exec())
 

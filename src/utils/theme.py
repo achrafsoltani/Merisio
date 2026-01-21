@@ -12,10 +12,10 @@ COLORS = {
     "accent_light": "#FFF3E0",
 
     # Backgrounds
-    "bg_main": "#FFFFFF",
-    "bg_sidebar": "#F8F9FA",
-    "bg_hover": "#F1F3F4",
-    "bg_selected": "#E8F0FE",
+    "bg_main": "#F5F5F5",
+    "bg_sidebar": "#EBEBEB",
+    "bg_hover": "#E0E0E0",
+    "bg_selected": "#D6E4F5",
 
     # Text
     "text_primary": "#202124",

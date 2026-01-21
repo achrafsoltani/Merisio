@@ -2,7 +2,7 @@
 Name=Merisio
 Comment=MERISE database modeling tool
 Exec=/home/achraf/Documents/GolandProjects/AchrafSoltani/AnalyseSI/venv/bin/python /home/achraf/Documents/GolandProjects/AchrafSoltani/AnalyseSI/main.py
-Icon=/home/achraf/Documents/GolandProjects/AchrafSoltani/AnalyseSI/resources/icons/app_icon.svg
+Icon=merisio
 Terminal=false
 Type=Application
 Categories=Development;Database;
