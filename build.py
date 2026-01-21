@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script for AnalyseSI Modern."""
+"""Build script for Merisio."""
 
 import os
 import sys
@@ -39,13 +39,35 @@ def build():
         print("PyInstaller not found. Installing...")
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyinstaller'])
 
-    # Build command
+    # Determine icon path
+    if system == 'windows':
+        icon_path = 'resources/icons/app_icon.ico'
+        if not os.path.exists(icon_path):
+            icon_path = 'resources/icons/app_icon.png'
+    else:
+        icon_path = 'resources/icons/app_icon.png'
+
+    # Build command using CLI arguments (no spec file needed)
     cmd = [
         sys.executable, '-m', 'PyInstaller',
         '--clean',
         '--noconfirm',
-        'merisio.spec'
+        '--onefile',
+        '--windowed',
+        '--name', APP_NAME,
+        '--add-data', f'resources/icons/app_icon.svg{os.pathsep}resources/icons',
+        '--add-data', f'resources/icons/app_icon.png{os.pathsep}resources/icons',
+        '--hidden-import', 'PySide6.QtCore',
+        '--hidden-import', 'PySide6.QtGui',
+        '--hidden-import', 'PySide6.QtWidgets',
     ]
+
+    # Add icon if exists
+    if os.path.exists(icon_path):
+        cmd.extend(['--icon', icon_path])
+
+    # Add main entry point
+    cmd.append('main.py')
 
     print(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd)
@@ -66,19 +88,18 @@ def build():
 
 
 def create_windows_ico():
-    """Create Windows .ico file from SVG (requires inkscape or imagemagick)."""
-    svg_path = "resources/icons/app_icon.svg"
+    """Create Windows .ico file from PNG (requires ImageMagick)."""
+    png_path = "resources/icons/app_icon.png"
     ico_path = "resources/icons/app_icon.ico"
 
-    if not os.path.exists(svg_path):
-        print(f"SVG not found: {svg_path}")
+    if not os.path.exists(png_path):
+        print(f"PNG not found: {png_path}")
         return False
 
     # Try using ImageMagick
     try:
         subprocess.run([
-            'convert', '-background', 'none',
-            svg_path,
+            'convert', png_path,
             '-define', 'icon:auto-resize=256,128,64,48,32,16',
             ico_path
         ], check=True)

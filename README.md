@@ -2,13 +2,25 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![License](https://img.shields.io/badge/license-GPL%20v2-green)
+![Python](https://img.shields.io/badge/python-3.11+-yellow)
+
 ## Features
 
 - **MCD Editor** - Visual diagram editor for entities, associations, and links
+  - Drag-and-drop positioning
+  - Multi-selection and deletion
+  - Cardinalities: (0,1), (0,N), (1,1), (1,N)
+  - Link styles: Curved, Orthogonal, Straight
+  - Toggle attribute visibility
 - **Data Dictionary** - Overview of all attributes across entities
 - **MLD View** - Logical Data Model with table/column tree view
+  - Editable column names (right-click or double-click to rename)
+  - Custom names saved in project and used in SQL generation
 - **SQL Generation** - PostgreSQL CREATE TABLE statements
-- **Project Management** - Save/load projects (.merisio format)
+- **Project Management** - Save/load projects in `.merisio` JSON format
+- **Options Menu** - Show/hide attributes, link style selection
 
 ## Screenshots
 
@@ -20,6 +32,31 @@ A modern MERISE database modeling tool built with Python and PySide6.
 - PySide6
 
 ## Installation
+
+### Pre-built Binaries
+
+Download the latest release from the [Releases](https://github.com/AchrafSoltani/Merisio/releases) page.
+
+**Linux:**
+- `Merisio-x.x.x-linux-x64.tar.gz` - Portable archive
+- `merisio_x.x.x_amd64.deb` - Debian/Ubuntu package
+
+**Windows:**
+- `Merisio-x.x.x-windows-x64.zip` - Portable archive
+
+#### Linux Installation
+
+**From .deb package (Debian/Ubuntu):**
+```bash
+sudo dpkg -i merisio_1.1.0_amd64.deb
+```
+
+**From archive:**
+```bash
+tar -xzvf Merisio-1.1.0-linux-x64.tar.gz
+cd Merisio-1.1.0-linux-x64
+./Merisio
+```
 
 ### From Source
 
@@ -39,10 +76,6 @@ pip install -r requirements.txt
 # Run the application
 python main.py
 ```
-
-### Pre-built Binaries
-
-Download the latest release from the [Releases](https://github.com/AchrafSoltani/Merisio/releases) page.
 
 ## Building from Source
 
@@ -84,37 +117,12 @@ python build.py build
 python build.py clean
 ```
 
-## Distribution
-
-### Linux
-
-```bash
-# Create a tarball with all necessary files
-mkdir -p Merisio-linux
-cp dist/Merisio Merisio-linux/
-cp resources/icons/app_icon.svg Merisio-linux/
-cp merisio.desktop Merisio-linux/
-tar -czvf Merisio-1.0.0-linux-x64.tar.gz Merisio-linux
-```
-
-Users can then:
-1. Extract the archive
-2. Run `./Merisio`
-3. Optionally install the .desktop file for system integration
-
-### Windows
-
-```bash
-# Create a ZIP archive
-# Or use NSIS/Inno Setup for an installer
-```
-
 ## Usage
 
-1. **Create Entities** - Click "Add Entity" in the MCD tab, define name and attributes
-2. **Create Associations** - Click "Add Association" to define relationships
-3. **Link Them** - Click "Add Link" to connect entities to associations with cardinalities
-4. **View MLD** - Switch to MLD tab to see the logical model
+1. **Create Entities** - Right-click on the MCD canvas or use the toolbar to add entities
+2. **Create Associations** - Add associations to define relationships between entities
+3. **Link Them** - Connect entities to associations with cardinalities
+4. **View MLD** - Switch to MLD tab to see the logical model (double-click columns to rename)
 5. **Generate SQL** - Switch to SQL tab to see PostgreSQL DDL statements
 6. **Save Project** - File > Save to save your work
 
@@ -132,23 +140,56 @@ Users can then:
 | Delete | Delete Selected |
 | Ctrl+Scroll | Zoom In/Out |
 
+### Options Menu
+
+| Option | Description |
+|--------|-------------|
+| Show Attributes | Toggle attribute visibility in MCD entities/associations |
+| Link Style > Curved | Bezier curve links (default) |
+| Link Style > Orthogonal | Right-angle links |
+| Link Style > Straight | Direct line links |
+
 ## Project Structure
 
 ```
-AnalyseSI/
+Merisio/
 ├── main.py                 # Application entry point
-├── build.py                # Build script
-├── analysesi.spec          # PyInstaller configuration
+├── build.py                # Build script for PyInstaller
+├── merisio.spec            # PyInstaller configuration
+├── merisio.desktop         # Linux desktop integration
 ├── requirements.txt        # Python dependencies
 ├── resources/
 │   └── icons/
-│       └── app_icon.svg    # Application icon
+│       ├── app_icon.svg    # Vector icon
+│       └── app_icon.png    # PNG icon (256x256)
 ├── src/
-│   ├── models/             # Data models
-│   ├── views/              # UI components
-│   ├── controllers/        # Business logic
-│   └── utils/              # Utilities and constants
-└── tests/                  # Unit tests
+│   ├── models/             # Data models (Entity, Association, Link, Project)
+│   ├── views/              # UI components (Canvas, Dialogs, Views)
+│   ├── controllers/        # Business logic (MLD transformer, SQL generator)
+│   └── utils/              # Utilities, constants, theme
+├── tests/                  # Unit tests
+└── .github/
+    └── workflows/
+        └── build.yml       # GitHub Actions CI/CD
+```
+
+## File Format
+
+Merisio uses a JSON-based project format with the `.merisio` extension:
+
+```json
+{
+  "version": "1.0",
+  "dictionary": { "attributes": [...] },
+  "mcd": {
+    "entities": [...],
+    "associations": [...],
+    "links": [...]
+  },
+  "mld": {
+    "column_overrides": { "TABLE.original_col": "renamed_col" }
+  }
+}
 ```
 
 ## License
@@ -157,8 +198,10 @@ GNU GPL v2
 
 ## Author
 
-Achraf SOLTANI
+**Achraf SOLTANI**
+Email: achraf.soltani@pm.me
+GitHub: [@AchrafSoltani](https://github.com/AchrafSoltani)
 
 ## Acknowledgments
 
-Based on the original [AnalyseSI](https://launchpad.net/analysesi) Java project.
+Inspired by the original [AnalyseSI](https://launchpad.net/analysesi) Java project.
