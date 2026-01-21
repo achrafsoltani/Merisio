@@ -1,0 +1,139 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-cursor0
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build executable
+        run: python build.py build
+
+      - name: Create release archive
+        run: |
+          mkdir -p Merisio-linux-x64
+          cp dist/Merisio Merisio-linux-x64/
+          cp README.md Merisio-linux-x64/
+          cp merisio.desktop Merisio-linux-x64/
+          cp resources/icons/app_icon.png Merisio-linux-x64/
+          tar -czvf Merisio-linux-x64.tar.gz Merisio-linux-x64/
+
+      - name: Create .deb package
+        run: |
+          mkdir -p merisio-deb/DEBIAN
+          mkdir -p merisio-deb/usr/bin
+          mkdir -p merisio-deb/usr/share/applications
+          mkdir -p merisio-deb/usr/share/icons/hicolor/256x256/apps
+
+          cat > merisio-deb/DEBIAN/control << 'EOF'
+          Package: merisio
+          Version: 1.1.0
+          Section: database
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Achraf SOLTANI <achraf.soltani@pm.me>
+          Description: MERISE Database Modeling Tool
+           Merisio is a modern MERISE database modeling application.
+           It allows you to create MCD diagrams, generate MLD views,
+           and export SQL scripts for PostgreSQL databases.
+          Homepage: https://github.com/AchrafSoltani/Merisio
+          EOF
+
+          cp dist/Merisio merisio-deb/usr/bin/merisio
+          chmod 755 merisio-deb/usr/bin/merisio
+          cp resources/icons/app_icon.png merisio-deb/usr/share/icons/hicolor/256x256/apps/merisio.png
+
+          cat > merisio-deb/usr/share/applications/merisio.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Merisio
+          Comment=MERISE Database Modeling Tool
+          Exec=/usr/bin/merisio
+          Icon=merisio
+          Terminal=false
+          Type=Application
+          Categories=Development;Database;
+          Keywords=database;modeling;merise;mcd;sql;
+          EOF
+
+          dpkg-deb --build merisio-deb merisio_1.1.0_amd64.deb
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: merisio-linux
+          path: |
+            Merisio-linux-x64.tar.gz
+            merisio_1.1.0_amd64.deb
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build executable
+        run: python build.py build
+
+      - name: Create release archive
+        run: |
+          mkdir Merisio-windows-x64
+          copy dist\Merisio.exe Merisio-windows-x64\
+          copy README.md Merisio-windows-x64\
+          Compress-Archive -Path Merisio-windows-x64 -DestinationPath Merisio-windows-x64.zip
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: merisio-windows
+          path: Merisio-windows-x64.zip
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: merisio-linux
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: merisio-windows
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Merisio-linux-x64.tar.gz
+            merisio_1.1.0_amd64.deb
+            Merisio-windows-x64.zip
+          generate_release_notes: true
