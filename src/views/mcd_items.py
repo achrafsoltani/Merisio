@@ -28,6 +28,10 @@ class EntityItem(QGraphicsItem):
     ATTR_HEIGHT = 20
     MIN_WIDTH = ENTITY_WIDTH
 
+    # Class-level colors (can be updated from project settings)
+    fill_color = ENTITY_COLOR
+    border_color = ENTITY_BORDER
+
     def __init__(self, entity: Entity, parent=None):
         super().__init__(parent)
         self.entity = entity
@@ -73,8 +77,8 @@ class EntityItem(QGraphicsItem):
             painter.setBrush(QBrush(QColor(SELECTED_COLOR).lighter(150)))
             painter.setPen(QPen(QColor(SELECTED_COLOR), 2))
         else:
-            painter.setBrush(QBrush(QColor(ENTITY_COLOR)))
-            painter.setPen(QPen(QColor(ENTITY_BORDER), 2))
+            painter.setBrush(QBrush(QColor(EntityItem.fill_color)))
+            painter.setPen(QPen(QColor(EntityItem.border_color), 2))
 
         painter.drawPath(path)
 
@@ -91,7 +95,7 @@ class EntityItem(QGraphicsItem):
 
             # Draw separator line
             sep_y = rect.top() + self.HEADER_HEIGHT
-            painter.setPen(QPen(QColor(ENTITY_BORDER), 1))
+            painter.setPen(QPen(QColor(EntityItem.border_color), 1))
             painter.drawLine(int(rect.left() + 5), int(sep_y), int(rect.right() - 5), int(sep_y))
 
             # Draw attributes
@@ -193,6 +197,10 @@ class AssociationItem(QGraphicsItem):
     MIN_WIDTH = 80
     MIN_HEIGHT = 40
 
+    # Class-level colors (can be updated from project settings)
+    fill_color = ASSOCIATION_COLOR
+    border_color = ASSOCIATION_BORDER
+
     def __init__(self, association: Association, parent=None):
         super().__init__(parent)
         self.association = association
@@ -239,8 +247,8 @@ class AssociationItem(QGraphicsItem):
             painter.setBrush(QBrush(QColor(SELECTED_COLOR).lighter(150)))
             painter.setPen(QPen(QColor(SELECTED_COLOR), 2))
         else:
-            painter.setBrush(QBrush(QColor(ASSOCIATION_COLOR)))
-            painter.setPen(QPen(QColor(ASSOCIATION_BORDER), 2))
+            painter.setBrush(QBrush(QColor(AssociationItem.fill_color)))
+            painter.setPen(QPen(QColor(AssociationItem.border_color), 2))
 
         painter.drawPath(path)
 
@@ -257,7 +265,7 @@ class AssociationItem(QGraphicsItem):
 
             # Draw separator line
             sep_y = rect.top() + self.HEADER_HEIGHT - 3
-            painter.setPen(QPen(QColor(ASSOCIATION_BORDER), 1))
+            painter.setPen(QPen(QColor(AssociationItem.border_color), 1))
             painter.drawLine(int(rect.left() + 10), int(sep_y), int(rect.right() - 10), int(sep_y))
 
             # Draw carrying attributes
@@ -345,6 +353,9 @@ class LinkItem(QGraphicsPathItem):
     # Class-level setting for link style
     link_style = "curved"  # "curved", "orthogonal", "straight"
 
+    # Class-level color (can be updated from project settings)
+    line_color = LINK_COLOR
+
     def __init__(
         self,
         link: Link,
@@ -358,13 +369,13 @@ class LinkItem(QGraphicsPathItem):
         self.association_item = association_item
 
         self.setFlag(QGraphicsItem.ItemIsSelectable)
-        self.setPen(QPen(QColor(LINK_COLOR), 1))
+        self.setPen(QPen(QColor(LinkItem.line_color), 1))
         self.setBrush(Qt.NoBrush)
 
         # Create background for cardinality label (white box)
         self._card_bg = QGraphicsRectItem(self)
         self._card_bg.setBrush(QBrush(QColor("white")))
-        self._card_bg.setPen(QPen(QColor(LINK_COLOR), 1))
+        self._card_bg.setPen(QPen(QColor(LinkItem.line_color), 1))
 
         # Create cardinality label
         self._card_label = QGraphicsTextItem(self)
@@ -486,7 +497,9 @@ class LinkItem(QGraphicsPathItem):
         if self.isSelected():
             self.setPen(QPen(QColor(SELECTED_COLOR), 2))
         else:
-            self.setPen(QPen(QColor(LINK_COLOR), 1))
+            self.setPen(QPen(QColor(LinkItem.line_color), 1))
+        # Update cardinality box border color
+        self._card_bg.setPen(QPen(QColor(LinkItem.line_color), 1))
         super().paint(painter, option, widget)
 
     def cleanup(self):
