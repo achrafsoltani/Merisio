@@ -205,6 +205,23 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        # Export submenu
+        export_menu = file_menu.addMenu("&Export Diagram")
+
+        export_svg_action = QAction("As &SVG...", self)
+        export_svg_action.triggered.connect(self._on_export_svg)
+        export_menu.addAction(export_svg_action)
+
+        export_png_action = QAction("As &PNG...", self)
+        export_png_action.triggered.connect(self._on_export_png)
+        export_menu.addAction(export_png_action)
+
+        export_pdf_action = QAction("As P&DF...", self)
+        export_pdf_action.triggered.connect(self._on_export_pdf)
+        export_menu.addAction(export_pdf_action)
+
+        file_menu.addSeparator()
+
         properties_action = QAction("Project &Properties...", self)
         properties_action.triggered.connect(self._on_project_properties)
         file_menu.addAction(properties_action)
@@ -459,6 +476,45 @@ class MainWindow(QMainWindow):
                 return False
 
         return False
+
+    def _on_export_svg(self):
+        """Export diagram as SVG."""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export as SVG", "", "SVG Files (*.svg)"
+        )
+        if file_path:
+            if not file_path.endswith(".svg"):
+                file_path += ".svg"
+            if self._mcd_canvas.export_to_svg(file_path):
+                self._update_status(f"Exported: {file_path}")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to export as SVG.")
+
+    def _on_export_png(self):
+        """Export diagram as PNG."""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export as PNG", "", "PNG Files (*.png)"
+        )
+        if file_path:
+            if not file_path.endswith(".png"):
+                file_path += ".png"
+            if self._mcd_canvas.export_to_png(file_path):
+                self._update_status(f"Exported: {file_path}")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to export as PNG.")
+
+    def _on_export_pdf(self):
+        """Export diagram as PDF."""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export as PDF", "", "PDF Files (*.pdf)"
+        )
+        if file_path:
+            if not file_path.endswith(".pdf"):
+                file_path += ".pdf"
+            if self._mcd_canvas.export_to_pdf(file_path):
+                self._update_status(f"Exported: {file_path}")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to export as PDF.")
 
     def _on_add_entity(self):
         """Add entity via MCD canvas."""
