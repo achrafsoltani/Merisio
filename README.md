@@ -2,7 +2,7 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
 ![Python](https://img.shields.io/badge/python-3.11+-yellow)
 
@@ -14,13 +14,16 @@ A modern MERISE database modeling tool built with Python and PySide6.
   - Cardinalities: (0,1), (0,N), (1,1), (1,N)
   - Link styles: Curved, Orthogonal, Straight
   - Toggle attribute visibility
+  - Zoom controls with slider (25%-400%)
+  - Customizable colors for entities, associations, and links
+- **Export** - Export diagrams to SVG, PNG, or PDF formats
 - **Data Dictionary** - Overview of all attributes across entities
 - **MLD View** - Logical Data Model with table/column tree view
   - Editable column names (right-click or double-click to rename)
   - Custom names saved in project and used in SQL generation
 - **SQL Generation** - PostgreSQL CREATE TABLE statements
 - **Project Management** - Save/load projects in `.merisio` JSON format
-- **Options Menu** - Show/hide attributes, link style selection
+- **Options Menu** - Show/hide attributes, link style, diagram colors
 
 ## Screenshots
 
@@ -49,13 +52,13 @@ Download the latest release from the [Releases](https://github.com/AchrafSoltani
 
 **From .deb package (Debian/Ubuntu):**
 ```bash
-sudo dpkg -i merisio_1.1.0_amd64.deb
+sudo dpkg -i merisio_1.2.0_amd64.deb
 ```
 
 **From archive:**
 ```bash
-tar -xzvf Merisio-1.1.0-linux-x64.tar.gz
-cd Merisio-1.1.0-linux-x64
+tar -xzvf Merisio-1.2.0-linux-x64.tar.gz
+cd Merisio-1.2.0-linux-x64
 ./Merisio
 ```
 
@@ -140,6 +143,10 @@ python build.py clean
 | Ctrl+4 | SQL Tab |
 | Delete | Delete Selected |
 | Ctrl+Scroll | Zoom In/Out |
+| Ctrl++ | Zoom In |
+| Ctrl+- | Zoom Out |
+| Ctrl+0 | Fit to View |
+| Ctrl+Shift+0 | Reset Zoom (100%) |
 
 ### Options Menu
 
@@ -149,6 +156,7 @@ python build.py clean
 | Link Style > Curved | Bezier curve links (default) |
 | Link Style > Orthogonal | Right-angle links |
 | Link Style > Straight | Direct line links |
+| Diagram Colors | Customize colors for entities, associations, and links |
 
 ## Project Structure
 
@@ -180,8 +188,14 @@ Merisio uses a JSON-based project format with the `.merisio` extension:
 
 ```json
 {
-  "version": "1.0",
-  "dictionary": { "attributes": [...] },
+  "version": "2.1",
+  "metadata": {
+    "name": "Project Name",
+    "description": "Project description",
+    "author": "Author Name",
+    "created_at": "2026-01-20T10:00:00",
+    "modified_at": "2026-02-01T15:30:00"
+  },
   "mcd": {
     "entities": [...],
     "associations": [...],
@@ -189,6 +203,13 @@ Merisio uses a JSON-based project format with the `.merisio` extension:
   },
   "mld": {
     "column_overrides": { "TABLE.original_col": "renamed_col" }
+  },
+  "colors": {
+    "entity_fill": "#E3F2FD",
+    "entity_border": "#1976D2",
+    "association_fill": "#FFF3E0",
+    "association_border": "#F57C00",
+    "link_color": "#000000"
   }
 }
 ```
