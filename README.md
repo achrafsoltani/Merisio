@@ -214,6 +214,10 @@ Merisio uses a JSON-based project format with the `.merisio` extension:
 }
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
+
 ## License
 
 GNU GPL v2
