@@ -1,8 +1,11 @@
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QMenu, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QPointF
-from PySide6.QtGui import QPainter, QAction
+from PySide6.QtCore import Qt, Signal, QPointF, QMarginsF, QRectF
+from PySide6.QtGui import QPainter, QAction, QImage, QColor
+from PySide6.QtSvg import QSvgGenerator
+from PySide6.QtGui import QPageSize, QPageLayout
+from PySide6.QtCore import QSizeF
 
 from ..models.project import Project
 from ..models.entity import Entity
@@ -567,6 +570,96 @@ class MCDCanvas(QGraphicsView):
     def get_zoom_level(self) -> int:
         """Get current zoom level as percentage."""
         return int(self._zoom_level * 100)
+
+    def export_to_svg(self, file_path: str) -> bool:
+        """Export the diagram to SVG format."""
+        try:
+            # Get bounding rect of all items with margin
+            items_rect = self._scene.itemsBoundingRect()
+            if items_rect.isEmpty():
+                return False
+
+            margin = 20
+            items_rect.adjust(-margin, -margin, margin, margin)
+
+            generator = QSvgGenerator()
+            generator.setFileName(file_path)
+            generator.setSize(items_rect.size().toSize())
+            generator.setViewBox(QRectF(0, 0, items_rect.width(), items_rect.height()))
+            generator.setTitle("Merisio MCD Diagram")
+
+            painter = QPainter()
+            painter.begin(generator)
+            painter.setRenderHint(QPainter.Antialiasing)
+            self._scene.render(painter, QRectF(0, 0, items_rect.width(), items_rect.height()), items_rect)
+            painter.end()
+            return True
+        except Exception:
+            return False
+
+    def export_to_png(self, file_path: str, scale: float = 2.0) -> bool:
+        """Export the diagram to PNG format with optional scale for higher resolution."""
+        try:
+            # Get bounding rect of all items with margin
+            items_rect = self._scene.itemsBoundingRect()
+            if items_rect.isEmpty():
+                return False
+
+            margin = 20
+            items_rect.adjust(-margin, -margin, margin, margin)
+
+            # Create image with scaled size for better quality
+            width = int(items_rect.width() * scale)
+            height = int(items_rect.height() * scale)
+            image = QImage(width, height, QImage.Format_ARGB32)
+            image.fill(QColor(255, 255, 255))  # White background
+
+            painter = QPainter()
+            painter.begin(image)
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.setRenderHint(QPainter.SmoothPixmapTransform)
+            self._scene.render(painter, QRectF(0, 0, width, height), items_rect)
+            painter.end()
+
+            return image.save(file_path, "PNG")
+        except Exception:
+            return False
+
+    def export_to_pdf(self, file_path: str) -> bool:
+        """Export the diagram to PDF format."""
+        try:
+            from PySide6.QtGui import QPdfWriter
+
+            # Get bounding rect of all items with margin
+            items_rect = self._scene.itemsBoundingRect()
+            if items_rect.isEmpty():
+                return False
+
+            margin = 20
+            items_rect.adjust(-margin, -margin, margin, margin)
+
+            writer = QPdfWriter(file_path)
+            writer.setTitle("Merisio MCD Diagram")
+            writer.setCreator("Merisio")
+
+            # Set page size to fit the diagram
+            page_size = QPageSize(QSizeF(items_rect.width(), items_rect.height()), QPageSize.Point)
+            writer.setPageSize(page_size)
+            writer.setPageMargins(QMarginsF(0, 0, 0, 0))
+
+            painter = QPainter()
+            painter.begin(writer)
+            painter.setRenderHint(QPainter.Antialiasing)
+
+            # Scale to fit the PDF page
+            scale = min(writer.width() / items_rect.width(), writer.height() / items_rect.height())
+            painter.scale(scale, scale)
+
+            self._scene.render(painter, QRectF(0, 0, items_rect.width(), items_rect.height()), items_rect)
+            painter.end()
+            return True
+        except Exception:
+            return False
 
     def set_show_attributes(self, show: bool):
         """Toggle showing attributes in entity and association items."""
