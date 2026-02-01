@@ -16,6 +16,12 @@ class MCDCanvas(QGraphicsView):
 
     # Signals
     modified = Signal()  # Emitted when the diagram is modified
+    zoom_changed = Signal(int)  # Emitted when zoom level changes (percentage)
+
+    # Zoom constants
+    ZOOM_MIN = 0.25  # 25%
+    ZOOM_MAX = 4.0   # 400%
+    ZOOM_STEP = 1.2  # 20% per step
 
     def __init__(self, project: Project, parent=None):
         super().__init__(parent)
@@ -31,6 +37,9 @@ class MCDCanvas(QGraphicsView):
         # Display options
         self._show_attributes = True
         self._link_style = "curved"  # "curved", "orthogonal", "straight"
+
+        # Zoom tracking
+        self._zoom_level = 1.0
 
         self._setup_view()
         self._context_pos = QPointF(0, 0)
@@ -446,12 +455,65 @@ class MCDCanvas(QGraphicsView):
         """Handle mouse wheel for zooming."""
         if event.modifiers() & Qt.ControlModifier:
             # Zoom with Ctrl + scroll
-            factor = 1.2
-            if event.angleDelta().y() < 0:
-                factor = 1 / factor
-            self.scale(factor, factor)
+            if event.angleDelta().y() > 0:
+                self.zoom_in()
+            else:
+                self.zoom_out()
         else:
             super().wheelEvent(event)
+
+    def zoom_in(self):
+        """Zoom in by one step."""
+        new_zoom = self._zoom_level * self.ZOOM_STEP
+        if new_zoom <= self.ZOOM_MAX:
+            self._apply_zoom(new_zoom)
+
+    def zoom_out(self):
+        """Zoom out by one step."""
+        new_zoom = self._zoom_level / self.ZOOM_STEP
+        if new_zoom >= self.ZOOM_MIN:
+            self._apply_zoom(new_zoom)
+
+    def zoom_reset(self):
+        """Reset zoom to 100%."""
+        self._apply_zoom(1.0)
+
+    def zoom_fit(self):
+        """Fit the diagram to the view."""
+        # Get bounding rect of all items
+        items_rect = self._scene.itemsBoundingRect()
+        if items_rect.isEmpty():
+            self.zoom_reset()
+            return
+
+        # Add margin
+        margin = 50
+        items_rect.adjust(-margin, -margin, margin, margin)
+
+        # Fit to view
+        self.fitInView(items_rect, Qt.KeepAspectRatio)
+
+        # Calculate and store the new zoom level
+        view_rect = self.viewport().rect()
+        scale_x = view_rect.width() / items_rect.width()
+        scale_y = view_rect.height() / items_rect.height()
+        new_zoom = min(scale_x, scale_y)
+
+        # Clamp to limits
+        new_zoom = max(self.ZOOM_MIN, min(self.ZOOM_MAX, new_zoom))
+        self._zoom_level = new_zoom
+        self.zoom_changed.emit(int(self._zoom_level * 100))
+
+    def _apply_zoom(self, new_zoom: float):
+        """Apply a new zoom level."""
+        factor = new_zoom / self._zoom_level
+        self._zoom_level = new_zoom
+        self.scale(factor, factor)
+        self.zoom_changed.emit(int(self._zoom_level * 100))
+
+    def get_zoom_level(self) -> int:
+        """Get current zoom level as percentage."""
+        return int(self._zoom_level * 100)
 
     def set_show_attributes(self, show: bool):
         """Toggle showing attributes in entity and association items."""
