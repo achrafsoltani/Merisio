@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QToolBar, QStatusBar,
     QMessageBox, QFileDialog, QWidget, QVBoxLayout,
-    QHBoxLayout, QPushButton, QLabel, QCheckBox
+    QHBoxLayout, QPushButton, QLabel, QCheckBox, QSlider
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QKeySequence, QIcon
@@ -102,7 +102,77 @@ class MainWindow(QMainWindow):
         self._status_bar = QStatusBar()
         self.setStatusBar(self._status_bar)
         self._status_label = QLabel("Ready")
-        self._status_bar.addWidget(self._status_label)
+        self._status_bar.addWidget(self._status_label, 1)  # Stretch to fill
+
+        # Zoom controls in status bar (right side)
+        round_btn_style = """
+            QPushButton {
+                border-radius: 10px;
+                border: 1px solid #999;
+                background-color: #f0f0f0;
+                color: #333;
+                font-weight: bold;
+                font-size: 13px;
+                padding: 0px;
+                min-width: 20px;
+                min-height: 20px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+        """
+
+        self._zoom_out_btn = QPushButton("\u2212")  # Unicode minus sign
+        self._zoom_out_btn.setFixedSize(20, 20)
+        self._zoom_out_btn.setToolTip("Zoom Out (Ctrl+-)")
+        self._zoom_out_btn.setStyleSheet(round_btn_style)
+        self._zoom_out_btn.clicked.connect(self._on_zoom_out)
+        self._status_bar.addPermanentWidget(self._zoom_out_btn)
+
+        self._zoom_slider = QSlider(Qt.Horizontal)
+        self._zoom_slider.setFixedWidth(120)
+        self._zoom_slider.setMinimum(25)   # 25%
+        self._zoom_slider.setMaximum(400)  # 400%
+        self._zoom_slider.setValue(100)    # 100%
+        self._zoom_slider.setToolTip("Drag to zoom")
+        self._zoom_slider.valueChanged.connect(self._on_zoom_slider_changed)
+        self._status_bar.addPermanentWidget(self._zoom_slider)
+
+        self._zoom_in_btn = QPushButton("+")
+        self._zoom_in_btn.setFixedSize(20, 20)
+        self._zoom_in_btn.setToolTip("Zoom In (Ctrl++)")
+        self._zoom_in_btn.setStyleSheet(round_btn_style)
+        self._zoom_in_btn.clicked.connect(self._on_zoom_in)
+        self._status_bar.addPermanentWidget(self._zoom_in_btn)
+
+        self._zoom_label = QLabel("100%")
+        self._zoom_label.setFixedWidth(45)
+        self._zoom_label.setAlignment(Qt.AlignCenter)
+        self._status_bar.addPermanentWidget(self._zoom_label)
+
+        self._zoom_fit_btn = QPushButton("Fit")
+        self._zoom_fit_btn.setFixedSize(36, 22)
+        self._zoom_fit_btn.setToolTip("Fit to View (Ctrl+0)")
+        self._zoom_fit_btn.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #999;
+                border-radius: 3px;
+                background-color: #f0f0f0;
+                color: #333;
+                padding: 2px 6px;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+        """)
+        self._zoom_fit_btn.clicked.connect(self._on_zoom_fit)
+        self._status_bar.addPermanentWidget(self._zoom_fit_btn)
 
     def _setup_menus(self):
         """Set up menu bar."""
@@ -177,6 +247,28 @@ class MainWindow(QMainWindow):
         sql_action.triggered.connect(lambda: self._tabs.setCurrentIndex(3))
         view_menu.addAction(sql_action)
 
+        view_menu.addSeparator()
+
+        zoom_in_action = QAction("Zoom &In", self)
+        zoom_in_action.setShortcut("Ctrl++")
+        zoom_in_action.triggered.connect(self._on_zoom_in)
+        view_menu.addAction(zoom_in_action)
+
+        zoom_out_action = QAction("Zoom &Out", self)
+        zoom_out_action.setShortcut("Ctrl+-")
+        zoom_out_action.triggered.connect(self._on_zoom_out)
+        view_menu.addAction(zoom_out_action)
+
+        zoom_reset_action = QAction("&Reset Zoom", self)
+        zoom_reset_action.setShortcut("Ctrl+Shift+0")
+        zoom_reset_action.triggered.connect(self._on_zoom_reset)
+        view_menu.addAction(zoom_reset_action)
+
+        zoom_fit_action = QAction("&Fit to View", self)
+        zoom_fit_action.setShortcut("Ctrl+0")
+        zoom_fit_action.triggered.connect(self._on_zoom_fit)
+        view_menu.addAction(zoom_fit_action)
+
         # Options menu
         options_menu = menubar.addMenu("&Options")
 
@@ -232,6 +324,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         """Connect signals between components."""
         self._mcd_canvas.modified.connect(self._on_modified)
+        self._mcd_canvas.zoom_changed.connect(self._on_zoom_changed)
         self._mld_view.mld_modified.connect(self._on_modified)
         self._tabs.currentChanged.connect(self._on_tab_changed)
 
@@ -463,6 +556,34 @@ class MainWindow(QMainWindow):
         self._straight_links_action.setChecked(style == "straight")
         # Apply to canvas
         self._mcd_canvas.set_link_style(style)
+
+    def _on_zoom_in(self):
+        """Zoom in on MCD canvas."""
+        self._mcd_canvas.zoom_in()
+
+    def _on_zoom_out(self):
+        """Zoom out on MCD canvas."""
+        self._mcd_canvas.zoom_out()
+
+    def _on_zoom_reset(self):
+        """Reset MCD canvas zoom to 100%."""
+        self._mcd_canvas.zoom_reset()
+
+    def _on_zoom_fit(self):
+        """Fit MCD canvas to view."""
+        self._mcd_canvas.zoom_fit()
+
+    def _on_zoom_changed(self, percentage: int):
+        """Update zoom label and slider when zoom changes."""
+        self._zoom_label.setText(f"{percentage}%")
+        # Update slider without triggering another zoom change
+        self._zoom_slider.blockSignals(True)
+        self._zoom_slider.setValue(percentage)
+        self._zoom_slider.blockSignals(False)
+
+    def _on_zoom_slider_changed(self, value: int):
+        """Handle zoom slider changes."""
+        self._mcd_canvas._apply_zoom(value / 100.0)
 
     def closeEvent(self, event):
         """Handle window close event."""
