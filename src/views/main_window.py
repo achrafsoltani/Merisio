@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         self._setup_toolbar()
         self._connect_signals()
         self._mcd_canvas.apply_colors(self._project.colors)
+        self._tabs.setCurrentIndex(1)  # Start on MCD tab
         self._update_title()
 
     def _setup_ui(self):
