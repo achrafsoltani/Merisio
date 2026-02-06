@@ -9,7 +9,7 @@ import shutil
 
 APP_NAME = "Merisio"
 CLI_NAME = "merisio-cli"
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 
 def clean():
@@ -119,6 +119,43 @@ def build_all():
     build_cli()
 
 
+def install_man():
+    """Install man pages to /usr/share/man/man1/."""
+    man_dir = "/usr/share/man/man1"
+    src_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "man")
+
+    pages = ["merisio.1", "merisio-cli.1"]
+    for page in pages:
+        src = os.path.join(src_dir, page)
+        if not os.path.isfile(src):
+            print(f"Man page not found: {src}")
+            sys.exit(1)
+        dst = os.path.join(man_dir, page)
+        print(f"Installing {src} -> {dst}")
+        shutil.copy2(src, dst)
+
+    print("Updating man database...")
+    subprocess.run(["mandb", "-q"])
+    print("Man pages installed.")
+
+
+def uninstall_man():
+    """Remove installed man pages."""
+    man_dir = "/usr/share/man/man1"
+    pages = ["merisio.1", "merisio-cli.1"]
+    for page in pages:
+        path = os.path.join(man_dir, page)
+        if os.path.isfile(path):
+            print(f"Removing {path}")
+            os.remove(path)
+        else:
+            print(f"Not found: {path}")
+
+    print("Updating man database...")
+    subprocess.run(["mandb", "-q"])
+    print("Man pages uninstalled.")
+
+
 def create_windows_ico():
     """Create Windows .ico file from PNG (requires ImageMagick)."""
     png_path = "resources/icons/app_icon.png"
@@ -157,8 +194,12 @@ if __name__ == '__main__':
             build_all()
         elif cmd == 'ico':
             create_windows_ico()
+        elif cmd == 'install-man':
+            install_man()
+        elif cmd == 'uninstall-man':
+            uninstall_man()
         else:
             print(f"Unknown command: {cmd}")
-            print("Usage: python build.py [clean|build|build-cli|build-all|ico]")
+            print("Usage: python build.py [clean|build|build-cli|build-all|ico|install-man|uninstall-man]")
     else:
         build_all()
