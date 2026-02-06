@@ -149,10 +149,13 @@ def cmd_export(args):
 
 
 def main():
+    from src.utils.constants import APP_VERSION
+
     parser = argparse.ArgumentParser(
         prog="merisio-cli",
         description="Merisio CLI — work with .merisio project files from the command line.",
     )
+    parser.add_argument("--version", action="version", version=f"merisio-cli {APP_VERSION}")
     parser.add_argument("file", help="Path to a .merisio project file")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
