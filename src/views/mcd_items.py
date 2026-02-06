@@ -221,17 +221,21 @@ class AssociationItem(QGraphicsItem):
     def _update_size(self):
         """Update size based on content."""
         self.prepareGeometryChange()
-        # Calculate width based on name length
-        name_width = len(self.association.name) * 9 + 30
+        # Measure association name with italic font (as drawn)
+        italic_font = QFont()
+        italic_font.setItalic(True)
+        fm_italic = QFontMetrics(italic_font)
+        name_width = fm_italic.horizontalAdvance(self.association.name) + 30
         self._width = max(self.MIN_WIDTH, name_width)
 
         if AssociationItem.show_attributes and self.association.attributes:
             # Calculate width for attributes too
+            fm = QFontMetrics(QFont())
             for attr in self.association.attributes:
                 attr_text = f"{attr.name} : {attr.data_type}"
                 if attr.size:
                     attr_text += f"({attr.size})"
-                attr_width = len(attr_text) * 7 + 20
+                attr_width = fm.horizontalAdvance(attr_text) + 20
                 self._width = max(self._width, attr_width)
             self._height = self.HEADER_HEIGHT + len(self.association.attributes) * self.ATTR_HEIGHT + 5
         else:
