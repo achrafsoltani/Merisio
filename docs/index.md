@@ -34,14 +34,16 @@ All packages include both the GUI application (`merisio`) and the CLI tool (`mer
 - Link styles: Curved, Orthogonal, Straight
 - Toggle attribute visibility
 - Zoom controls (25%–400%)
-- Customizable diagram colours
+- Customisable diagram colours
 - Export diagrams to SVG, PNG, or PDF
+- `--help` and `--version` flags
 
 ### CLI Tool (`merisio-cli`)
 - Validate MCD models in CI pipelines
 - Generate PostgreSQL DDL to stdout or file
 - Inspect MLD tables and columns
 - Export diagrams headlessly (PNG, SVG, PDF)
+- Full `--help` and `--version` support
 
 ### Data Dictionary
 - Overview of all attributes across entities
@@ -68,7 +70,7 @@ All packages include both the GUI application (`merisio`) and the CLI tool (`mer
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo dpkg -i merisio_1.3.0_amd64.deb
+sudo dpkg -i merisio_1.3.1_amd64.deb
 ```
 
 This installs both `/usr/bin/merisio` (GUI) and `/usr/bin/merisio-cli` (CLI).
@@ -156,6 +158,36 @@ merisio-cli project.merisio export --format png -o diagram.png --scale 3.0
 | Ctrl+- | Zoom Out |
 | Ctrl+0 | Fit to View |
 | Ctrl+Shift+0 | Reset Zoom (100%) |
+
+---
+
+## Help & Version
+
+Both binaries support `--help` and `--version`:
+
+```bash
+merisio --help          # Print usage and exit
+merisio --version       # Print version and exit
+merisio-cli --help      # Print CLI usage and exit
+merisio-cli --version   # Print CLI version and exit
+```
+
+---
+
+## Man Pages
+
+Man pages are provided for both `merisio(1)` and `merisio-cli(1)`.
+
+```bash
+# Install system-wide (requires root)
+sudo python build.py install-man
+man merisio
+man merisio-cli
+
+# Or read directly from source
+man ./man/merisio.1
+man ./man/merisio-cli.1
+```
 
 ---
 

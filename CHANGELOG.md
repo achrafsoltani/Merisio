@@ -5,6 +5,14 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-02-06
+
+### Added
+- Man pages for `merisio(1)` and `merisio-cli(1)`
+- `--help` and `--version` flags for the GUI binary (`merisio`)
+- `--version` flag for the CLI binary (`merisio-cli`)
+- Build commands: `install-man`, `uninstall-man` for system-wide man page installation
+
 ## [1.3.0] - 2026-02-06
 
 ### Added
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux desktop integration
 - Keyboard shortcuts (Ctrl+1-4 for tabs, Ctrl+N/O/S for file operations)
 
+[1.3.1]: https://github.com/AchrafSoltani/Merisio/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.0.0...v1.1.0

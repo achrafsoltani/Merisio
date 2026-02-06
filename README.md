@@ -2,7 +2,7 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.1-blue)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
 ![Python](https://img.shields.io/badge/python-3.11+-yellow)
 
@@ -34,6 +34,29 @@ A modern MERISE database modeling tool built with Python and PySide6.
 
 ![MCD Editor](resources/screenshots/mcd-editor.png)
 *MCD Editor - First screenshot of Merisio v1.0.0 (January 21, 2026)*
+
+## Man Pages
+
+Man pages are provided for both binaries:
+
+```bash
+# Install system-wide (requires root)
+sudo python build.py install-man
+
+# Then use:
+man merisio
+man merisio-cli
+
+# Uninstall
+sudo python build.py uninstall-man
+```
+
+You can also read them directly from the source tree:
+
+```bash
+man ./man/merisio.1
+man ./man/merisio-cli.1
+```
 
 ## Requirements
 
@@ -115,6 +138,10 @@ python build.py build-cli
 # Create .ico from PNG (Windows, requires ImageMagick)
 python build.py ico
 
+# Install/uninstall man pages (Linux, requires root)
+sudo python build.py install-man
+sudo python build.py uninstall-man
+
 # Clean build files
 python build.py clean
 ```
@@ -124,6 +151,17 @@ python build.py clean
 - `dist\Merisio.exe` and `dist\merisio-cli.exe` on Windows
 
 ## Usage
+
+Both binaries support `--help` and `--version`:
+
+```bash
+merisio --help          # Print usage and exit
+merisio --version       # Print version and exit
+merisio-cli --help      # Print CLI usage and exit
+merisio-cli --version   # Print CLI version and exit
+```
+
+### GUI Workflow
 
 1. **Create Entities** - Right-click on the MCD canvas or use the toolbar to add entities
 2. **Create Associations** - Add associations to define relationships between entities
@@ -208,6 +246,9 @@ Merisio/
 ├── build.py                # Build script for PyInstaller
 ├── merisio.desktop         # Linux desktop integration
 ├── requirements.txt        # Python dependencies
+├── man/
+│   ├── merisio.1           # GUI man page
+│   └── merisio-cli.1       # CLI man page
 ├── resources/
 │   └── icons/
 │       ├── app_icon.svg    # Vector icon
