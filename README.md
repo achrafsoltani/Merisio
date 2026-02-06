@@ -2,7 +2,7 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
 ![Python](https://img.shields.io/badge/python-3.11+-yellow)
 
@@ -17,6 +17,11 @@ A modern MERISE database modeling tool built with Python and PySide6.
   - Zoom controls with slider (25%-400%)
   - Customizable colors for entities, associations, and links
 - **Export** - Export diagrams to SVG, PNG, or PDF formats
+- **CLI Tool** (`merisio-cli`) - Command-line interface for batch processing
+  - Validate MCD models
+  - Generate PostgreSQL DDL
+  - Inspect MLD tables
+  - Export diagrams (PNG, SVG, PDF) headlessly
 - **Data Dictionary** - Overview of all attributes across entities
 - **MLD View** - Logical Data Model with table/column tree view
   - Editable column names (right-click or double-click to rename)
@@ -52,14 +57,16 @@ Download the latest release from the [Releases](https://github.com/AchrafSoltani
 
 **From .deb package (Debian/Ubuntu):**
 ```bash
-sudo dpkg -i merisio_1.2.0_amd64.deb
+sudo dpkg -i merisio_1.3.0_amd64.deb
 ```
+This installs both `merisio` (GUI) and `merisio-cli` (CLI) to `/usr/bin/`.
 
 **From archive:**
 ```bash
-tar -xzvf Merisio-1.2.0-linux-x64.tar.gz
-cd Merisio-1.2.0-linux-x64
-./Merisio
+tar -xzvf Merisio-linux-x64.tar.gz
+cd Merisio-linux-x64
+./Merisio        # GUI
+./merisio-cli    # CLI
 ```
 
 ### From Source
@@ -91,35 +98,30 @@ pip install pyinstaller
 
 ### Build Commands
 
-**Linux:**
 ```bash
 # Activate virtual environment
-source venv/bin/activate
+source venv/bin/activate   # Linux/macOS
+# or: venv\Scripts\activate  # Windows
 
-# Build
+# Build both GUI and CLI (default)
+python build.py build-all
+
+# Build GUI only
 python build.py build
 
-# Output: dist/Merisio (standalone executable)
-```
+# Build CLI only
+python build.py build-cli
 
-**Windows:**
-```bash
-# Activate virtual environment
-venv\Scripts\activate
-
-# Create .ico from SVG (requires ImageMagick)
+# Create .ico from PNG (Windows, requires ImageMagick)
 python build.py ico
 
-# Build
-python build.py build
-
-# Output: dist\Merisio.exe
-```
-
-**Clean build files:**
-```bash
+# Clean build files
 python build.py clean
 ```
+
+**Output:**
+- `dist/Merisio` (GUI) and `dist/merisio-cli` (CLI) on Linux
+- `dist\Merisio.exe` and `dist\merisio-cli.exe` on Windows
 
 ## Usage
 
@@ -129,6 +131,45 @@ python build.py clean
 4. **View MLD** - Switch to MLD tab to see the logical model (double-click columns to rename)
 5. **Generate SQL** - Switch to SQL tab to see PostgreSQL DDL statements
 6. **Save Project** - File > Save to save your work
+
+### CLI Usage
+
+The `merisio-cli` tool allows you to work with `.merisio` project files from the command line, useful for CI pipelines and scripting.
+
+```bash
+merisio-cli <file.merisio> <command> [options]
+```
+
+| Command | Description |
+|---------|-------------|
+| `info` | Show project metadata and statistics |
+| `validate` | Validate the MCD model (exit code 1 on errors) |
+| `sql` | Generate PostgreSQL DDL |
+| `mld` | Show the logical data model (MLD tables) |
+| `export` | Export diagram to PNG, SVG, or PDF |
+
+**Examples:**
+
+```bash
+# Show project info
+merisio-cli project.merisio info
+
+# Validate and fail CI on errors
+merisio-cli project.merisio validate
+
+# Generate SQL to stdout or file
+merisio-cli project.merisio sql
+merisio-cli project.merisio sql -o schema.sql
+
+# View MLD tables
+merisio-cli project.merisio mld
+
+# Export diagram
+merisio-cli project.merisio export --format png -o diagram.png
+merisio-cli project.merisio export --format svg -o diagram.svg
+merisio-cli project.merisio export --format pdf -o diagram.pdf
+merisio-cli project.merisio export --format png -o diagram.png --scale 3.0
+```
 
 ### Keyboard Shortcuts
 
@@ -162,9 +203,9 @@ python build.py clean
 
 ```
 Merisio/
-├── main.py                 # Application entry point
+├── main.py                 # GUI entry point
+├── cli.py                  # CLI entry point (merisio-cli)
 ├── build.py                # Build script for PyInstaller
-├── merisio.spec            # PyInstaller configuration
 ├── merisio.desktop         # Linux desktop integration
 ├── requirements.txt        # Python dependencies
 ├── resources/
@@ -175,6 +216,7 @@ Merisio/
 │   ├── models/             # Data models (Entity, Association, Link, Project)
 │   ├── views/              # UI components (Canvas, Dialogs, Views)
 │   ├── controllers/        # Business logic (MLD transformer, SQL generator)
+│   ├── export/             # Headless diagram renderer (used by CLI)
 │   └── utils/              # Utilities, constants, theme
 ├── tests/                  # Unit tests
 └── .github/

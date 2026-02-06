@@ -5,6 +5,25 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-06
+
+### Added
+- CLI tool (`merisio-cli`) for batch processing `.merisio` files without the GUI
+  - `info` — show project metadata and statistics
+  - `validate` — validate the MCD model (exit code 1 on errors)
+  - `sql` — generate PostgreSQL DDL to stdout or file (`-o`)
+  - `mld` — show the logical data model (MLD tables)
+  - `export` — export diagram to PNG, SVG, or PDF (`--format`, `-o`, `--scale`)
+- Headless diagram renderer (`src/export/renderer.py`) for offscreen export
+- Build commands: `build-cli` (CLI only), `build-all` (GUI + CLI)
+- `.deb` package now installs both `/usr/bin/merisio` and `/usr/bin/merisio-cli`
+- Windows zip now includes both `Merisio.exe` and `merisio-cli.exe`
+- Auto-size entity and association boxes to fit names using font metrics
+
+### Changed
+- Default `python build.py` now builds both GUI and CLI
+- MCD tab opens by default on startup
+
 ## [1.2.0] - 2026-02-01
 
 ### Added
@@ -54,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux desktop integration
 - Keyboard shortcuts (Ctrl+1-4 for tabs, Ctrl+N/O/S for file operations)
 
+[1.3.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AchrafSoltani/Merisio/releases/tag/v1.0.0
