@@ -6,7 +6,7 @@ layout: default
 
 A modern **MERISE database modeling tool** built with Python and PySide6.
 
-Create MCD (Conceptual Data Model) diagrams, automatically generate MLD (Logical Data Model) views, and export PostgreSQL SQL scripts.
+Create MCD (Conceptual Data Model) diagrams, automatically generate MLD (Logical Data Model) views, and export PostgreSQL SQL scripts — from the GUI or the command line.
 
 ![MCD Editor](mcd-editor.png)
 
@@ -20,6 +20,8 @@ Create MCD (Conceptual Data Model) diagrams, automatically generate MLD (Logical
 - **Linux**: `.tar.gz` (portable) or `.deb` (Debian/Ubuntu)
 - **Windows**: `.zip` (portable)
 
+All packages include both the GUI application (`merisio`) and the CLI tool (`merisio-cli`).
+
 ---
 
 ## Features
@@ -31,6 +33,15 @@ Create MCD (Conceptual Data Model) diagrams, automatically generate MLD (Logical
 - Cardinalities: (0,1), (0,N), (1,1), (1,N)
 - Link styles: Curved, Orthogonal, Straight
 - Toggle attribute visibility
+- Zoom controls (25%–400%)
+- Customizable diagram colours
+- Export diagrams to SVG, PNG, or PDF
+
+### CLI Tool (`merisio-cli`)
+- Validate MCD models in CI pipelines
+- Generate PostgreSQL DDL to stdout or file
+- Inspect MLD tables and columns
+- Export diagrams headlessly (PNG, SVG, PDF)
 
 ### Data Dictionary
 - Overview of all attributes across entities
@@ -57,20 +68,23 @@ Create MCD (Conceptual Data Model) diagrams, automatically generate MLD (Logical
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo dpkg -i merisio_1.1.0_amd64.deb
+sudo dpkg -i merisio_1.3.0_amd64.deb
 ```
+
+This installs both `/usr/bin/merisio` (GUI) and `/usr/bin/merisio-cli` (CLI).
 
 ### Linux (Portable)
 
 ```bash
 tar -xzvf Merisio-linux-x64.tar.gz
 cd Merisio-linux-x64
-./Merisio
+./Merisio        # GUI
+./merisio-cli    # CLI
 ```
 
 ### Windows
 
-Extract `Merisio-windows-x64.zip` and run `Merisio.exe`
+Extract `Merisio-windows-x64.zip` and run `Merisio.exe` (GUI) or `merisio-cli.exe` (CLI).
 
 ### From Source
 
@@ -80,7 +94,47 @@ cd Merisio
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python main.py
+python main.py       # GUI
+python cli.py        # CLI
+```
+
+---
+
+## CLI Usage
+
+```
+merisio-cli <file.merisio> <command> [options]
+```
+
+| Command | Description |
+|---------|-------------|
+| `info` | Show project metadata and statistics |
+| `validate` | Validate the MCD model (exit code 1 on errors) |
+| `sql` | Generate PostgreSQL DDL |
+| `mld` | Show the logical data model |
+| `export` | Export diagram to PNG, SVG, or PDF |
+
+### Examples
+
+```bash
+# Project info
+merisio-cli project.merisio info
+
+# Validate (useful in CI — fails with exit code 1)
+merisio-cli project.merisio validate
+
+# Generate SQL
+merisio-cli project.merisio sql
+merisio-cli project.merisio sql -o schema.sql
+
+# View MLD tables
+merisio-cli project.merisio mld
+
+# Export diagram
+merisio-cli project.merisio export --format png -o diagram.png
+merisio-cli project.merisio export --format svg -o diagram.svg
+merisio-cli project.merisio export --format pdf -o diagram.pdf
+merisio-cli project.merisio export --format png -o diagram.png --scale 3.0
 ```
 
 ---
@@ -98,6 +152,10 @@ python main.py
 | Ctrl+4 | SQL Tab |
 | Delete | Delete Selected |
 | Ctrl+Scroll | Zoom In/Out |
+| Ctrl++ | Zoom In |
+| Ctrl+- | Zoom Out |
+| Ctrl+0 | Fit to View |
+| Ctrl+Shift+0 | Reset Zoom (100%) |
 
 ---
 
