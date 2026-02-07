@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merisio CLI — validate, generate SQL, view MLD, and export diagrams from .merisio files."""
+"""Merisio CLI — validate, generate SQL, view MLD, export diagrams, and parse MSD files."""
 
 import argparse
 import os
@@ -111,6 +111,53 @@ def cmd_mld(args):
         print()
 
 
+def cmd_parse(args):
+    """Parse an MSD file and convert to .merisio project."""
+    from src.msd import MSDParser, MSDProjectBuilder
+    from src.utils.file_io import FileIO
+
+    file_path = args.file
+    if not os.path.isfile(file_path):
+        print(f"Error: file not found: {file_path}", file=sys.stderr)
+        sys.exit(2)
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            source = f.read()
+    except OSError as e:
+        print(f"Error reading file: {e}", file=sys.stderr)
+        sys.exit(2)
+
+    parser = MSDParser()
+    parse_result = parser.parse(source, filename=file_path)
+
+    builder = MSDProjectBuilder()
+    project, errors = builder.build(parse_result)
+
+    # Print warnings and errors
+    has_fatal = False
+    for err in errors:
+        print(str(err), file=sys.stderr)
+        if err.severity == "error":
+            has_fatal = True
+
+    if has_fatal:
+        print(f"Parse failed with errors.", file=sys.stderr)
+        sys.exit(1)
+
+    # Determine output path
+    output = args.output
+    if not output:
+        base, _ = os.path.splitext(file_path)
+        output = base + ".merisio"
+
+    if FileIO.save_project(project, output):
+        print(f"Saved project to {output}")
+    else:
+        print(f"Error: failed to save project to {output}", file=sys.stderr)
+        sys.exit(2)
+
+
 def cmd_export(args):
     """Export diagram to PNG, SVG, or PDF."""
     # QGraphicsScene requires QApplication (not QGuiApplication)
@@ -153,10 +200,10 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="merisio-cli",
-        description="Merisio CLI — work with .merisio project files from the command line.",
+        description="Merisio CLI — work with .merisio and .msd project files from the command line.",
     )
     parser.add_argument("--version", action="version", version=f"merisio-cli {APP_VERSION}")
-    parser.add_argument("file", help="Path to a .merisio project file")
+    parser.add_argument("file", help="Path to a .merisio or .msd project file")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -173,6 +220,10 @@ def main():
     # mld
     subparsers.add_parser("mld", help="Show the logical data model (MLD tables)")
 
+    # parse
+    parse_parser = subparsers.add_parser("parse", help="Parse an MSD file and convert to .merisio")
+    parse_parser.add_argument("-o", "--output", help="Output .merisio file (default: same name with .merisio extension)")
+
     # export
     export_parser = subparsers.add_parser("export", help="Export diagram to PNG, SVG, or PDF")
     export_parser.add_argument("--format", required=True, choices=["png", "svg", "pdf"],
@@ -188,6 +239,7 @@ def main():
         "validate": cmd_validate,
         "sql": cmd_sql,
         "mld": cmd_mld,
+        "parse": cmd_parse,
         "export": cmd_export,
     }
 
