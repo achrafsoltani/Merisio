@@ -13,9 +13,12 @@ merisio-cli \- command-line interface for Merisio project files
 .B merisio-cli
 is a command-line tool for working with
 .B .merisio
+and
+.B .msd
 project files without launching the graphical editor. It can display project
 information, validate MCD models, generate PostgreSQL DDL, show the logical
-data model, and export diagrams to image formats.
+data model, export diagrams to image formats, and parse MSD (Merisio Schema
+Definition) files into .merisio projects.
 .PP
 It is intended for scripting, CI/CD pipelines, and batch processing.
 .SH OPTIONS
@@ -75,6 +78,30 @@ Show the logical data model (MLD tables).
 .PP
 Prints all tables with their columns, primary keys, foreign keys, and
 nullability constraints.
+.SS parse
+Parse an MSD (Merisio Schema Definition) file and convert it to a .merisio project.
+.PP
+.RS
+.B merisio-cli
+.I file.msd
+.B parse
+.RB [ \-o
+.IR output ]
+.RE
+.PP
+Reads a
+.B .msd
+text file, parses entities, associations, links, and optional project metadata,
+runs automatic layout, and saves the result as a
+.B .merisio
+JSON project file. If no output path is specified, the output file has the same
+base name as the input with a .merisio extension.
+.PP
+Parse errors and warnings are printed to stderr. If any fatal errors occur, the
+process exits with code 1 without writing an output file.
+.TP
+.BR \-o ", " \-\-output " " \fIpath\fP
+Output .merisio file path. Defaults to the input filename with a .merisio extension.
 .SS export
 Export diagram to PNG, SVG, or PDF.
 .PP
@@ -105,7 +132,7 @@ Scale factor for PNG export. Default is 2.0. Ignored for SVG and PDF.
 Success.
 .TP
 .B 1
-Validation failed (one or more errors in the MCD model).
+Validation or parse failed (one or more errors in the MCD model or MSD file).
 .TP
 .B 2
 Runtime error (file not found, write failure, unsupported format, etc.).
@@ -156,6 +183,18 @@ Export a PDF:
 .PP
 .RS
 .B merisio-cli project.merisio export --format pdf -o diagram.pdf
+.RE
+.PP
+Parse an MSD file to .merisio:
+.PP
+.RS
+.B merisio-cli schema.msd parse
+.RE
+.PP
+Parse an MSD file with explicit output:
+.PP
+.RS
+.B merisio-cli schema.msd parse -o project.merisio
 .RE
 .SH FILE FORMAT
 See
