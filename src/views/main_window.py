@@ -8,7 +8,7 @@ from PySide6.QtGui import QAction, QKeySequence, QIcon
 import os
 
 from ..models.project import Project
-from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER
+from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER, MSD_FILE_FILTER
 from ..utils.file_io import FileIO
 from ..controllers.mcd_controller import MCDController
 from .dictionary_view import DictionaryView
@@ -192,6 +192,10 @@ class MainWindow(QMainWindow):
         open_action.setShortcut(QKeySequence.Open)
         open_action.triggered.connect(self._on_open)
         file_menu.addAction(open_action)
+
+        import_msd_action = QAction("&Import MSD...", self)
+        import_msd_action.triggered.connect(self._on_import_msd)
+        file_menu.addAction(import_msd_action)
 
         file_menu.addSeparator()
 
@@ -447,6 +451,62 @@ class MainWindow(QMainWindow):
                     self, "Error",
                     f"Failed to open project:\n{file_path}"
                 )
+
+    def _on_import_msd(self):
+        """Import a project from an MSD file."""
+        if not self._check_save():
+            return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import MSD File", "", MSD_FILE_FILTER
+        )
+
+        if file_path:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    source = f.read()
+            except OSError:
+                QMessageBox.critical(
+                    self, "Error",
+                    f"Failed to read file:\n{file_path}"
+                )
+                return
+
+            from ..msd import MSDParser, MSDProjectBuilder
+
+            parser = MSDParser()
+            parse_result = parser.parse(source, filename=file_path)
+
+            builder = MSDProjectBuilder()
+            project, errors = builder.build(parse_result)
+
+            # Show errors/warnings if any
+            fatal_errors = [e for e in errors if e.severity == "error"]
+            warnings = [e for e in errors if e.severity == "warning"]
+
+            if fatal_errors:
+                msg = "Import failed with errors:\n\n"
+                msg += "\n".join(f"- {e}" for e in fatal_errors)
+                if warnings:
+                    msg += "\n\nWarnings:\n"
+                    msg += "\n".join(f"- {e}" for e in warnings)
+                QMessageBox.critical(self, "Import Error", msg)
+                return
+
+            if warnings:
+                msg = "Import succeeded with warnings:\n\n"
+                msg += "\n".join(f"- {e}" for e in warnings)
+                QMessageBox.warning(self, "Import Warnings", msg)
+
+            self._project = project
+            self._dictionary_view.set_project(self._project)
+            self._mcd_canvas.set_project(self._project)
+            self._mcd_canvas.apply_colors(self._project.colors)
+            self._mld_view.set_project(self._project)
+            self._sql_view.set_project(self._project)
+            self._update_title()
+            self._update_status(f"Imported MSD: {file_path}")
+            self._mcd_canvas.zoom_fit()
 
     def _on_save(self) -> bool:
         """Save the current project."""
