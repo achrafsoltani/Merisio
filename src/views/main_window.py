@@ -492,7 +492,7 @@ class MainWindow(QMainWindow):
         self._output_panel.setCurrentIndex(2)  # SQL tab in output
 
     # =========================================================================
-    # Original handlers (preserved from v1.3.1)
+    # Core handlers
     # =========================================================================
 
     def _update_title(self):
