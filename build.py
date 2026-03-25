@@ -9,7 +9,10 @@ import shutil
 
 APP_NAME = "Merisio"
 CLI_NAME = "merisio-cli"
-VERSION = "1.3.1"
+
+# Read version from source of truth
+sys.path.insert(0, os.path.dirname(__file__))
+from src.utils.constants import APP_VERSION as VERSION
 
 
 def clean():
