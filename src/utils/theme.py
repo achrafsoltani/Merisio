@@ -132,8 +132,8 @@ def get_stylesheet() -> str:
 
     QTabBar::tab:selected {{
         background-color: {COLORS['bg_main']};
-        color: {COLORS['primary']};
-        border-bottom: 2px solid {COLORS['primary']};
+        color: {COLORS['text_primary']};
+        border-bottom: 2px solid {COLORS['text_secondary']};
         margin-bottom: -1px;
     }}
 
@@ -163,24 +163,26 @@ def get_stylesheet() -> str:
 
     /* Push Buttons */
     QPushButton {{
-        background-color: {COLORS['primary']};
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
+        background-color: {COLORS['bg_sidebar']};
+        color: {COLORS['text_primary']};
+        border: 1px solid {COLORS['border']};
+        padding: 6px 14px;
+        border-radius: 4px;
     }}
 
     QPushButton:hover {{
-        background-color: {COLORS['primary_hover']};
+        background-color: {COLORS['bg_hover']};
+        border-color: #BBBFC4;
     }}
 
     QPushButton:pressed {{
-        background-color: {COLORS['primary']};
+        background-color: #D0D0D0;
     }}
 
     QPushButton:disabled {{
-        background-color: {COLORS['border']};
+        background-color: {COLORS['bg_main']};
         color: {COLORS['text_muted']};
+        border-color: {COLORS['border_light']};
     }}
 
     /* Line Edit */
@@ -194,7 +196,7 @@ def get_stylesheet() -> str:
     }}
 
     QLineEdit:focus {{
-        border-color: {COLORS['primary']};
+        border-color: {COLORS['text_secondary']};
     }}
 
     /* Text Edit */
@@ -207,7 +209,7 @@ def get_stylesheet() -> str:
     }}
 
     QTextEdit:focus {{
-        border-color: {COLORS['primary']};
+        border-color: {COLORS['text_secondary']};
     }}
 
     /* Combo Box */
