@@ -1,0 +1,87 @@
+name: merisio
+version: '1.5.0'
+summary: MERISE database modelling tool
+description: |
+  Merisio is a modern MERISE database modelling tool built with Python and PySide6.
+  Design conceptual data models (MCD) with a visual diagram editor, automatically
+  generate logical models (MLD), and export PostgreSQL SQL scripts.
+
+  Features:
+  - Visual MCD editor with drag-and-drop entities, associations, and links
+  - Sidebar with project tree, properties panel, and minimap overview
+  - Automatic MLD generation with customisable column names
+  - PostgreSQL DDL export
+  - Export diagrams to SVG, PNG, or PDF
+  - CLI tool for batch processing and CI/CD
+  - Customisable diagram colours and link styles
+
+grade: stable
+confinement: strict
+base: core24
+icon: resources/icons/app_icon.png
+
+architectures:
+  - build-on: [amd64]
+
+apps:
+  merisio:
+    command: bin/merisio
+    desktop: share/applications/merisio.desktop
+    extensions: [kde-neon-6]
+    plugs:
+      - home
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+
+  merisio-cli:
+    command: bin/merisio-cli
+
+parts:
+  merisio:
+    plugin: python
+    source: .
+    python-packages:
+      - PySide6
+    override-build: |
+      craftctl default
+
+      # Install app source
+      mkdir -p $CRAFT_PART_INSTALL/share/merisio
+      cp -r src/ $CRAFT_PART_INSTALL/share/merisio/
+      cp main.py $CRAFT_PART_INSTALL/share/merisio/
+      cp cli.py $CRAFT_PART_INSTALL/share/merisio/
+
+      # Launcher scripts
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      cat > $CRAFT_PART_INSTALL/bin/merisio << 'EOF'
+      #!/bin/bash
+      exec python3 $SNAP/share/merisio/main.py "$@"
+      EOF
+      chmod +x $CRAFT_PART_INSTALL/bin/merisio
+
+      cat > $CRAFT_PART_INSTALL/bin/merisio-cli << 'EOF'
+      #!/bin/bash
+      exec python3 $SNAP/share/merisio/cli.py "$@"
+      EOF
+      chmod +x $CRAFT_PART_INSTALL/bin/merisio-cli
+
+      # Desktop entry
+      mkdir -p $CRAFT_PART_INSTALL/share/applications
+      cat > $CRAFT_PART_INSTALL/share/applications/merisio.desktop << 'DESKTOP'
+      [Desktop Entry]
+      Name=Merisio
+      GenericName=Database Modelling Tool
+      Comment=MERISE database modelling — MCD diagrams, MLD generation, PostgreSQL SQL export
+      Exec=merisio
+      Icon=${SNAP}/share/icons/hicolor/256x256/apps/merisio.png
+      Terminal=false
+      Type=Application
+      Categories=Development;Database;
+      DESKTOP
+
+      # Icon
+      mkdir -p $CRAFT_PART_INSTALL/share/icons/hicolor/256x256/apps
+      cp resources/icons/app_icon.png $CRAFT_PART_INSTALL/share/icons/hicolor/256x256/apps/merisio.png
