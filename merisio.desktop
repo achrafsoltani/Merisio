@@ -1,9 +1,12 @@
 [Desktop Entry]
 Name=Merisio
-Comment=MERISE database modeling tool
-Exec=/home/achraf/Documents/GolandProjects/AchrafSoltani/Merisio/venv/bin/python /home/achraf/Documents/GolandProjects/AchrafSoltani/Merisio/main.py
-Icon=merisio
+GenericName=Database Modelling Tool
+Comment=MERISE database modelling — MCD diagrams, MLD generation, PostgreSQL SQL export
+Exec=merisio
+Icon=com.github.achrafsoltani.Merisio
 Terminal=false
 Type=Application
 Categories=Development;Database;
+Keywords=merise;database;mcd;mld;sql;postgresql;entity;diagram;
 StartupWMClass=merisio
+StartupNotify=true

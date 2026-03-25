@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.github.achrafsoltani.Merisio</id>
+
+  <name>Merisio</name>
+  <summary>MERISE database modelling tool</summary>
+
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-2.0</project_license>
+
+  <description>
+    <p>
+      Merisio is a modern MERISE database modelling tool built with Python and PySide6.
+      Design conceptual data models (MCD) with a visual diagram editor, automatically
+      generate logical models (MLD), and export PostgreSQL SQL scripts.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Visual MCD editor with drag-and-drop entities, associations, and links</li>
+      <li>Sidebar with project tree, properties panel, and minimap overview</li>
+      <li>Automatic MLD (logical model) generation with customisable column names</li>
+      <li>PostgreSQL DDL export (CREATE TABLE, PRIMARY KEY, FOREIGN KEY)</li>
+      <li>Export diagrams to SVG, PNG, or PDF</li>
+      <li>Link cardinality editing (0,1 / 0,N / 1,1 / 1,N)</li>
+      <li>Data dictionary with attribute overview across all entities</li>
+      <li>Model validation with detailed error reporting</li>
+      <li>CLI tool for batch processing and CI/CD integration</li>
+      <li>Customisable diagram colours and link styles (curved, orthogonal, straight)</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.github.achrafsoltani.Merisio.desktop</launchable>
+
+  <url type="homepage">https://achrafsoltani.github.io/Merisio/</url>
+  <url type="bugtracker">https://github.com/AchrafSoltani/Merisio/issues</url>
+  <url type="vcs-browser">https://github.com/AchrafSoltani/Merisio</url>
+
+  <developer id="com.github.achrafsoltani">
+    <name>Achraf Soltani</name>
+  </developer>
+
+  <provides>
+    <binary>merisio</binary>
+    <binary>merisio-cli</binary>
+  </provides>
+
+  <requires>
+    <display_length compare="ge">1024</display_length>
+  </requires>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>MCD Diagram Editor with sidebar and output panel</caption>
+      <image>https://raw.githubusercontent.com/AchrafSoltani/Merisio/main/resources/screenshots/mcd-editor.png</image>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="1.5.0" date="2026-03-25">
+      <description>
+        <p>Properties panel with Edit button and link cardinality editing. Native Qt widget rendering.</p>
+      </description>
+    </release>
+    <release version="1.4.0" date="2026-03-25">
+      <description>
+        <p>MySQL Workbench-inspired layout with sidebar (minimap, project tree, properties panel), central tabbed editors, and bottom output panel.</p>
+      </description>
+    </release>
+    <release version="1.3.1" date="2026-02-06">
+      <description>
+        <p>Man pages and --help/--version flags for GUI and CLI binaries.</p>
+      </description>
+    </release>
+    <release version="1.3.0" date="2026-02-06">
+      <description>
+        <p>CLI tool for batch processing, headless diagram export, auto-sizing entity boxes.</p>
+      </description>
+    </release>
+    <release version="1.2.0" date="2026-02-01">
+      <description>
+        <p>Zoom controls, diagram export (SVG/PNG/PDF), customisable colours.</p>
+      </description>
+    </release>
+    <release version="1.1.0" date="2026-01-21">
+      <description>
+        <p>MLD column renaming, link styles, project properties.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-01-20">
+      <description>
+        <p>Initial release with MCD editor, MLD view, SQL generation, and project save/load.</p>
+      </description>
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>merise</keyword>
+    <keyword>database</keyword>
+    <keyword>mcd</keyword>
+    <keyword>mld</keyword>
+    <keyword>sql</keyword>
+    <keyword>postgresql</keyword>
+    <keyword>entity</keyword>
+    <keyword>diagram</keyword>
+    <keyword>modelling</keyword>
+  </keywords>
+</component>
