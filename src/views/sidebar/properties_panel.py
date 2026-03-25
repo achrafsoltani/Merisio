@@ -108,17 +108,25 @@ class PropertiesPanel(QWidget):
     def _refresh_form(self):
         self._updating = True
 
-        if self._current_type == "entity" and self._current_id in self._project.entities:
-            entity = self._project.entities[self._current_id]
-            self._name_edit.setText(entity.name)
-            self._type_label.setText("Entity")
-            self._show_attributes(entity.attributes)
+        if self._current_type == "entity":
+            entity = self._project.get_entity(self._current_id)
+            if entity:
+                self._name_edit.setText(entity.name)
+                self._type_label.setText("Entity")
+                self._show_attributes(entity.attributes)
+            else:
+                self.clear_selection()
+                return
 
-        elif self._current_type == "association" and self._current_id in self._project.associations:
-            assoc = self._project.associations[self._current_id]
-            self._name_edit.setText(assoc.name)
-            self._type_label.setText("Association")
-            self._show_attributes(assoc.attributes)
+        elif self._current_type == "association":
+            assoc = self._project.get_association(self._current_id)
+            if assoc:
+                self._name_edit.setText(assoc.name)
+                self._type_label.setText("Association")
+                self._show_attributes(assoc.attributes)
+            else:
+                self.clear_selection()
+                return
 
         else:
             self.clear_selection()
@@ -129,7 +137,7 @@ class PropertiesPanel(QWidget):
         self._attrs_table.setRowCount(len(attributes))
         for i, attr in enumerate(attributes):
             self._attrs_table.setItem(i, 0, QTableWidgetItem(attr.name))
-            type_str = attr.type
+            type_str = attr.data_type
             if attr.size:
                 type_str += f"({attr.size})"
             self._attrs_table.setItem(i, 1, QTableWidgetItem(type_str))
@@ -145,14 +153,14 @@ class PropertiesPanel(QWidget):
         if not new_name:
             return
 
-        if self._current_type == "entity" and self._current_id in self._project.entities:
-            entity = self._project.entities[self._current_id]
-            if entity.name != new_name:
+        if self._current_type == "entity":
+            entity = self._project.get_entity(self._current_id)
+            if entity and entity.name != new_name:
                 entity.name = new_name
                 self.property_changed.emit()
 
-        elif self._current_type == "association" and self._current_id in self._project.associations:
-            assoc = self._project.associations[self._current_id]
-            if assoc.name != new_name:
+        elif self._current_type == "association":
+            assoc = self._project.get_association(self._current_id)
+            if assoc and assoc.name != new_name:
                 assoc.name = new_name
                 self.property_changed.emit()

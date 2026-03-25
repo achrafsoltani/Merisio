@@ -400,6 +400,7 @@ class MainWindow(QMainWindow):
         # Canvas signals
         self._mcd_canvas.modified.connect(self._on_modified)
         self._mcd_canvas.zoom_changed.connect(self._on_zoom_changed)
+        self._mcd_canvas.selection_changed.connect(self._on_canvas_selection_changed)
         self._mld_view.mld_modified.connect(self._on_modified)
         self._tabs.currentChanged.connect(self._on_tab_changed)
 
@@ -438,28 +439,29 @@ class MainWindow(QMainWindow):
     def _on_tree_item_selected(self, item_type: str, item_id: str):
         """Handle tree selection — show properties and highlight on canvas."""
         self._properties_panel.show_item(item_type, item_id)
-        # Select on canvas
-        self._mcd_canvas.clearSelection()
-        if item_type == "entity" and item_id in self._mcd_canvas._entity_items:
-            self._mcd_canvas._entity_items[item_id].setSelected(True)
-            self._mcd_canvas.centerOn(self._mcd_canvas._entity_items[item_id])
-        elif item_type == "association" and item_id in self._mcd_canvas._association_items:
-            self._mcd_canvas._association_items[item_id].setSelected(True)
-            self._mcd_canvas.centerOn(self._mcd_canvas._association_items[item_id])
+        self._mcd_canvas.select_item_by_id(item_type, item_id)
 
     def _on_tree_item_double_clicked(self, item_type: str, item_id: str):
         """Handle tree double-click — open edit dialog."""
-        if item_type == "entity" and item_id in self._mcd_canvas._entity_items:
-            self._mcd_canvas._edit_entity(self._mcd_canvas._entity_items[item_id])
-        elif item_type == "association" and item_id in self._mcd_canvas._association_items:
-            self._mcd_canvas._edit_association(self._mcd_canvas._association_items[item_id])
+        if item_type == "entity":
+            self._mcd_canvas.edit_entity_by_id(item_id)
+        elif item_type == "association":
+            self._mcd_canvas.edit_association_by_id(item_id)
 
     def _on_tree_delete(self, item_type: str, item_id: str):
         """Handle tree delete request."""
         if item_type == "entity":
-            self._mcd_canvas._delete_entity(item_id)
+            self._mcd_canvas.delete_entity_by_id(item_id)
         elif item_type == "association":
-            self._mcd_canvas._delete_association(item_id)
+            self._mcd_canvas.delete_association_by_id(item_id)
+
+    def _on_canvas_selection_changed(self, item_type: str, item_id: str):
+        """Handle canvas selection — update tree and properties panel."""
+        if item_type and item_id:
+            self._properties_panel.show_item(item_type, item_id)
+            self._project_tree.select_item(item_type, item_id)
+        else:
+            self._properties_panel.clear_selection()
 
     def _on_property_changed(self):
         """Handle property edit from sidebar."""

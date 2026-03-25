@@ -56,9 +56,9 @@ class ProjectTree(QWidget):
         entities_root = QTreeWidgetItem(["Entities"])
         entities_root.setFlags(entities_root.flags() & ~Qt.ItemFlag.ItemIsSelectable)
         entities_root.setExpanded(True)
-        for eid, entity in self._project.entities.items():
+        for entity in self._project.get_all_entities():
             item = QTreeWidgetItem([entity.name])
-            item.setData(0, Qt.ItemDataRole.UserRole, ("entity", eid))
+            item.setData(0, Qt.ItemDataRole.UserRole, ("entity", entity.id))
             entities_root.addChild(item)
         self._tree.addTopLevelItem(entities_root)
 
@@ -66,11 +66,25 @@ class ProjectTree(QWidget):
         assocs_root = QTreeWidgetItem(["Associations"])
         assocs_root.setFlags(assocs_root.flags() & ~Qt.ItemFlag.ItemIsSelectable)
         assocs_root.setExpanded(True)
-        for aid, assoc in self._project.associations.items():
+        for assoc in self._project.get_all_associations():
             item = QTreeWidgetItem([assoc.name])
-            item.setData(0, Qt.ItemDataRole.UserRole, ("association", aid))
+            item.setData(0, Qt.ItemDataRole.UserRole, ("association", assoc.id))
             assocs_root.addChild(item)
         self._tree.addTopLevelItem(assocs_root)
+
+    def select_item(self, item_type: str, item_id: str):
+        """Select an item in the tree programmatically (without emitting signals)."""
+        self._tree.blockSignals(True)
+        for i in range(self._tree.topLevelItemCount()):
+            root = self._tree.topLevelItem(i)
+            for j in range(root.childCount()):
+                child = root.child(j)
+                data = child.data(0, Qt.ItemDataRole.UserRole)
+                if data and data == (item_type, item_id):
+                    self._tree.setCurrentItem(child)
+                    self._tree.blockSignals(False)
+                    return
+        self._tree.blockSignals(False)
 
     def _on_current_changed(self, current, previous):
         if current is None:

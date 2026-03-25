@@ -20,6 +20,7 @@ class MCDCanvas(QGraphicsView):
     # Signals
     modified = Signal()  # Emitted when the diagram is modified
     zoom_changed = Signal(int)  # Emitted when zoom level changes (percentage)
+    selection_changed = Signal(str, str)  # (type: "entity"/"association"/"", id or "")
 
     # Zoom constants
     ZOOM_MIN = 0.25  # 25%
@@ -31,6 +32,7 @@ class MCDCanvas(QGraphicsView):
         self._project = project
         self._scene = QGraphicsScene(self)
         self.setScene(self._scene)
+        self._scene.selectionChanged.connect(self._on_scene_selection_changed)
 
         # Item tracking
         self._entity_items: dict[str, EntityItem] = {}
@@ -258,6 +260,58 @@ class MCDCanvas(QGraphicsView):
             self._scene.removeItem(item)
             del self._association_items[item.association.id]
             self.modified.emit()
+
+    # --- Public wrappers for sidebar integration ---
+
+    def edit_entity_by_id(self, entity_id: str):
+        """Open edit dialog for an entity by ID."""
+        item = self._entity_items.get(entity_id)
+        if item:
+            self._edit_entity(item)
+
+    def edit_association_by_id(self, association_id: str):
+        """Open edit dialog for an association by ID."""
+        item = self._association_items.get(association_id)
+        if item:
+            self._edit_association(item)
+
+    def delete_entity_by_id(self, entity_id: str):
+        """Delete an entity by ID."""
+        item = self._entity_items.get(entity_id)
+        if item:
+            self._delete_entity(item)
+
+    def delete_association_by_id(self, association_id: str):
+        """Delete an association by ID."""
+        item = self._association_items.get(association_id)
+        if item:
+            self._delete_association(item)
+
+    def select_item_by_id(self, item_type: str, item_id: str):
+        """Select and centre on an item by type and ID."""
+        self._scene.blockSignals(True)
+        self._scene.clearSelection()
+        if item_type == "entity" and item_id in self._entity_items:
+            self._entity_items[item_id].setSelected(True)
+            self.centerOn(self._entity_items[item_id])
+        elif item_type == "association" and item_id in self._association_items:
+            self._association_items[item_id].setSelected(True)
+            self.centerOn(self._association_items[item_id])
+        self._scene.blockSignals(False)
+
+    def _on_scene_selection_changed(self):
+        """Emit selection_changed when canvas selection changes."""
+        selected = self._scene.selectedItems()
+        if not selected:
+            self.selection_changed.emit("", "")
+            return
+        item = selected[0]
+        if isinstance(item, EntityItem):
+            self.selection_changed.emit("entity", item.entity.id)
+        elif isinstance(item, AssociationItem):
+            self.selection_changed.emit("association", item.association.id)
+        else:
+            self.selection_changed.emit("", "")
 
     def _add_link_from_entity(self, entity_item: EntityItem):
         """Add a link from an entity to an association."""
