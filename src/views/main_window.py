@@ -413,6 +413,7 @@ class MainWindow(QMainWindow):
 
         # Properties panel
         self._properties_panel.property_changed.connect(self._on_property_changed)
+        self._properties_panel.edit_requested.connect(self._on_tree_item_double_clicked)
 
     # =========================================================================
     # View toggles
@@ -442,11 +443,13 @@ class MainWindow(QMainWindow):
         self._mcd_canvas.select_item_by_id(item_type, item_id)
 
     def _on_tree_item_double_clicked(self, item_type: str, item_id: str):
-        """Handle tree double-click — open edit dialog."""
+        """Handle tree double-click or Edit button — open edit dialog."""
         if item_type == "entity":
             self._mcd_canvas.edit_entity_by_id(item_id)
         elif item_type == "association":
             self._mcd_canvas.edit_association_by_id(item_id)
+        # Refresh properties panel after dialog closes
+        self._properties_panel.show_item(item_type, item_id)
 
     def _on_tree_delete(self, item_type: str, item_id: str):
         """Handle tree delete request."""

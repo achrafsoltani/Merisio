@@ -310,6 +310,8 @@ class MCDCanvas(QGraphicsView):
             self.selection_changed.emit("entity", item.entity.id)
         elif isinstance(item, AssociationItem):
             self.selection_changed.emit("association", item.association.id)
+        elif isinstance(item, LinkItem):
+            self.selection_changed.emit("link", item.link.id)
         else:
             self.selection_changed.emit("", "")
 

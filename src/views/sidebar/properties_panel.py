@@ -1,4 +1,4 @@
-"""Properties panel — inline editor for selected entity/association."""
+"""Properties panel — shows selected item properties with edit button."""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -11,24 +11,24 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QCheckBox,
     QVBoxLayout,
     QWidget,
 )
 
 from ...models.project import Project
-from ...utils.constants import DATA_TYPES
+from ...utils.constants import CARDINALITY_MIN, CARDINALITY_MAX
 
 
 class PropertiesPanel(QWidget):
     """Sidebar panel showing properties of the selected item."""
 
-    property_changed = Signal()  # emitted when user edits a property
+    property_changed = Signal()
+    edit_requested = Signal(str, str)  # (type, id) — request to open edit dialog
 
     def __init__(self, project: Project, parent=None):
         super().__init__(parent)
         self._project = project
-        self._current_type = None  # "entity" or "association"
+        self._current_type = None
         self._current_id = None
         self._updating = False
         self._setup_ui()
@@ -47,13 +47,13 @@ class PropertiesPanel(QWidget):
         self._empty_label.setWordWrap(True)
         layout.addWidget(self._empty_label)
 
-        # Form container (hidden when nothing selected)
+        # === Entity/Association form ===
         self._form_widget = QWidget()
         form_layout = QVBoxLayout(self._form_widget)
         form_layout.setContentsMargins(8, 0, 8, 0)
         form_layout.setSpacing(6)
 
-        # Name field
+        # Name field (editable)
         name_form = QFormLayout()
         name_form.setContentsMargins(0, 0, 0, 0)
         self._name_edit = QLineEdit()
@@ -61,15 +61,22 @@ class PropertiesPanel(QWidget):
         name_form.addRow("Name:", self._name_edit)
         form_layout.addLayout(name_form)
 
-        # Type label
         self._type_label = QLabel()
         self._type_label.setStyleSheet("color: #5F6368;")
         form_layout.addWidget(self._type_label)
 
-        # Attributes table
+        # Attributes table (read-only display)
+        attrs_header = QHBoxLayout()
         attrs_label = QLabel("Attributes:")
         attrs_label.setStyleSheet("font-weight: bold; margin-top: 4px;")
-        form_layout.addWidget(attrs_label)
+        attrs_header.addWidget(attrs_label)
+        attrs_header.addStretch()
+
+        self._edit_btn = QPushButton("Edit...")
+        self._edit_btn.setFixedHeight(24)
+        self._edit_btn.clicked.connect(self._on_edit_clicked)
+        attrs_header.addWidget(self._edit_btn)
+        form_layout.addLayout(attrs_header)
 
         self._attrs_table = QTableWidget()
         self._attrs_table.setColumnCount(3)
@@ -78,12 +85,47 @@ class PropertiesPanel(QWidget):
         self._attrs_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self._attrs_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self._attrs_table.verticalHeader().setVisible(False)
-        self._attrs_table.setMaximumHeight(200)
         self._attrs_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._attrs_table.setMaximumHeight(200)
         form_layout.addWidget(self._attrs_table)
 
         self._form_widget.setVisible(False)
         layout.addWidget(self._form_widget)
+
+        # === Link form ===
+        self._link_widget = QWidget()
+        link_layout = QVBoxLayout(self._link_widget)
+        link_layout.setContentsMargins(8, 0, 8, 0)
+        link_layout.setSpacing(6)
+
+        link_type_label = QLabel("Link")
+        link_type_label.setStyleSheet("color: #5F6368;")
+        link_layout.addWidget(link_type_label)
+
+        self._link_entity_label = QLabel()
+        link_layout.addWidget(self._link_entity_label)
+
+        self._link_assoc_label = QLabel()
+        link_layout.addWidget(self._link_assoc_label)
+
+        card_form = QFormLayout()
+        card_form.setContentsMargins(0, 0, 0, 0)
+
+        self._card_min_combo = QComboBox()
+        self._card_min_combo.addItems(CARDINALITY_MIN)
+        self._card_min_combo.currentTextChanged.connect(self._on_cardinality_changed)
+        card_form.addRow("Min:", self._card_min_combo)
+
+        self._card_max_combo = QComboBox()
+        self._card_max_combo.addItems(CARDINALITY_MAX)
+        self._card_max_combo.currentTextChanged.connect(self._on_cardinality_changed)
+        card_form.addRow("Max:", self._card_max_combo)
+
+        link_layout.addLayout(card_form)
+        link_layout.addStretch()
+
+        self._link_widget.setVisible(False)
+        layout.addWidget(self._link_widget)
 
         layout.addStretch()
 
@@ -95,15 +137,24 @@ class PropertiesPanel(QWidget):
         self._current_type = None
         self._current_id = None
         self._form_widget.setVisible(False)
+        self._link_widget.setVisible(False)
         self._empty_label.setVisible(True)
 
     def show_item(self, item_type: str, item_id: str):
-        """Display properties for the given entity or association."""
         self._current_type = item_type
         self._current_id = item_id
         self._empty_label.setVisible(False)
-        self._form_widget.setVisible(True)
-        self._refresh_form()
+
+        if item_type == "link":
+            self._form_widget.setVisible(False)
+            self._link_widget.setVisible(True)
+            self._refresh_link_form()
+        else:
+            self._form_widget.setVisible(True)
+            self._link_widget.setVisible(False)
+            self._refresh_form()
+
+    # === Entity/Association form ===
 
     def _refresh_form(self):
         self._updating = True
@@ -116,6 +167,7 @@ class PropertiesPanel(QWidget):
                 self._show_attributes(entity.attributes)
             else:
                 self.clear_selection()
+                self._updating = False
                 return
 
         elif self._current_type == "association":
@@ -126,10 +178,8 @@ class PropertiesPanel(QWidget):
                 self._show_attributes(assoc.attributes)
             else:
                 self.clear_selection()
+                self._updating = False
                 return
-
-        else:
-            self.clear_selection()
 
         self._updating = False
 
@@ -148,19 +198,53 @@ class PropertiesPanel(QWidget):
     def _on_name_changed(self):
         if self._updating or not self._current_id:
             return
-
         new_name = self._name_edit.text().strip()
         if not new_name:
             return
-
         if self._current_type == "entity":
             entity = self._project.get_entity(self._current_id)
             if entity and entity.name != new_name:
                 entity.name = new_name
                 self.property_changed.emit()
-
         elif self._current_type == "association":
             assoc = self._project.get_association(self._current_id)
             if assoc and assoc.name != new_name:
                 assoc.name = new_name
                 self.property_changed.emit()
+
+    def _on_edit_clicked(self):
+        if self._current_type and self._current_id:
+            self.edit_requested.emit(self._current_type, self._current_id)
+
+    # === Link form ===
+
+    def _refresh_link_form(self):
+        self._updating = True
+        link = self._project.get_link(self._current_id)
+        if not link:
+            self.clear_selection()
+            self._updating = False
+            return
+
+        entity = self._project.get_entity(link.entity_id)
+        assoc = self._project.get_association(link.association_id)
+        self._link_entity_label.setText(f"Entity: <b>{entity.name}</b>" if entity else "Entity: ?")
+        self._link_assoc_label.setText(f"Association: <b>{assoc.name}</b>" if assoc else "Association: ?")
+
+        self._card_min_combo.setCurrentText(link.cardinality_min)
+        self._card_max_combo.setCurrentText(link.cardinality_max)
+
+        self._updating = False
+
+    def _on_cardinality_changed(self):
+        if self._updating or not self._current_id:
+            return
+        link = self._project.get_link(self._current_id)
+        if not link:
+            return
+        new_min = self._card_min_combo.currentText()
+        new_max = self._card_max_combo.currentText()
+        if link.cardinality_min != new_min or link.cardinality_max != new_max:
+            link.cardinality_min = new_min
+            link.cardinality_max = new_max
+            self.property_changed.emit()

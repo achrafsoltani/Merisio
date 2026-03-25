@@ -213,36 +213,9 @@ def get_stylesheet() -> str:
     }}
 
     /* Combo Box */
+    /* ComboBox — use native rendering, just match background */
     QComboBox {{
-        background-color: {COLORS['bg_main']};
-        border: 1px solid {COLORS['border']};
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 80px;
-    }}
-
-    QComboBox:focus {{
-        border-color: {COLORS['primary']};
-    }}
-
-    QComboBox::drop-down {{
-        border: none;
-        width: 20px;
-    }}
-
-    QComboBox::down-arrow {{
-        border-left: 4px solid transparent;
-        border-right: 4px solid transparent;
-        border-top: 5px solid {COLORS['text_secondary']};
-        margin-right: 8px;
-    }}
-
-    QComboBox QAbstractItemView {{
-        background-color: {COLORS['bg_main']};
-        border: 1px solid {COLORS['border']};
-        border-radius: 6px;
-        selection-background-color: {COLORS['bg_selected']};
-        selection-color: {COLORS['text_primary']};
+        padding: 4px 8px;
     }}
 
     /* Spin Box */
