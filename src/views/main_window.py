@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QToolBar, QStatusBar,
     QMessageBox, QFileDialog, QWidget, QVBoxLayout,
-    QHBoxLayout, QPushButton, QLabel, QCheckBox, QSlider
+    QHBoxLayout, QPushButton, QLabel, QCheckBox, QSlider,
+    QSplitter,
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QKeySequence, QIcon
@@ -11,14 +12,16 @@ from ..models.project import Project
 from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER, MSD_FILE_FILTER
 from ..utils.file_io import FileIO
 from ..controllers.mcd_controller import MCDController
-from .dictionary_view import DictionaryView
 from .mcd_canvas import MCDCanvas
 from .mld_view import MLDView
-from .sql_view import SQLView
+from .output_panel import OutputPanel
+from .sidebar.project_tree import ProjectTree
+from .sidebar.properties_panel import PropertiesPanel
+from .sidebar.minimap import Minimap
 
 
 class MainWindow(QMainWindow):
-    """Main application window."""
+    """Main application window — MySQL Workbench-inspired layout."""
 
     def __init__(self):
         super().__init__()
@@ -28,27 +31,52 @@ class MainWindow(QMainWindow):
         self._setup_toolbar()
         self._connect_signals()
         self._mcd_canvas.apply_colors(self._project.colors)
-        self._tabs.setCurrentIndex(1)  # Start on MCD tab
+        self._tabs.setCurrentIndex(0)  # Start on MCD tab
         self._update_title()
 
     def _setup_ui(self):
-        """Set up the main UI layout."""
+        """Set up the main UI layout with sidebar + central tabs + bottom panel."""
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
 
-        # Set window icon
         icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources", "icons", "app_icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
-        self.setMinimumSize(1024, 768)
+        self.setMinimumSize(1100, 768)
 
-        # Central widget with tabs
+        # =====================================================================
+        # Main horizontal splitter: sidebar | content
+        # =====================================================================
+        self._main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.setCentralWidget(self._main_splitter)
+
+        # --- Left sidebar ---
+        sidebar = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
+
+        # Minimap
+        self._minimap = Minimap()
+        sidebar_layout.addWidget(self._minimap)
+
+        # Project tree
+        self._project_tree = ProjectTree(self._project)
+        sidebar_layout.addWidget(self._project_tree, 1)
+
+        # Properties panel
+        self._properties_panel = PropertiesPanel(self._project)
+        sidebar_layout.addWidget(self._properties_panel, 1)
+
+        sidebar.setMinimumWidth(180)
+        sidebar.setMaximumWidth(320)
+        self._main_splitter.addWidget(sidebar)
+
+        # --- Right content area (vertical splitter: tabs on top, output on bottom) ---
+        self._content_splitter = QSplitter(Qt.Orientation.Vertical)
+
+        # Central tabs: MCD, MLD
         self._tabs = QTabWidget()
-        self.setCentralWidget(self._tabs)
-
-        # Dictionary tab (read-only overview of all attributes)
-        self._dictionary_view = DictionaryView(self._project)
-        self._tabs.addTab(self._dictionary_view, "Dictionary")
 
         # MCD tab
         mcd_widget = QWidget()
@@ -90,44 +118,50 @@ class MainWindow(QMainWindow):
         self._mcd_canvas = MCDCanvas(self._project)
         mcd_layout.addWidget(self._mcd_canvas)
 
-        self._tabs.addTab(mcd_widget, "MCD")
+        self._tabs.addTab(mcd_widget, "MCD Diagram")
 
         # MLD tab
         self._mld_view = MLDView(self._project)
         self._tabs.addTab(self._mld_view, "MLD")
 
-        # SQL tab
-        self._sql_view = SQLView(self._project)
-        self._tabs.addTab(self._sql_view, "SQL")
+        self._content_splitter.addWidget(self._tabs)
 
+        # Bottom output panel
+        self._output_panel = OutputPanel(self._project)
+        self._content_splitter.addWidget(self._output_panel)
+
+        # Set initial splitter proportions (75% tabs, 25% output)
+        self._content_splitter.setSizes([500, 180])
+
+        self._main_splitter.addWidget(self._content_splitter)
+
+        # Set initial sidebar width
+        self._main_splitter.setSizes([220, 880])
+
+        # Connect minimap to canvas
+        self._minimap.set_canvas(self._mcd_canvas)
+
+        # =====================================================================
         # Status bar
+        # =====================================================================
         self._status_bar = QStatusBar()
         self.setStatusBar(self._status_bar)
         self._status_label = QLabel("Ready")
-        self._status_bar.addWidget(self._status_label, 1)  # Stretch to fill
+        self._status_bar.addWidget(self._status_label, 1)
 
-        # Zoom controls in status bar (right side)
+        # Zoom controls
         round_btn_style = """
             QPushButton {
-                border-radius: 10px;
-                border: 1px solid #999;
-                background-color: #f0f0f0;
-                color: #333;
-                font-weight: bold;
-                font-size: 13px;
-                padding: 0px;
-                min-width: 20px;
-                min-height: 20px;
+                border-radius: 10px; border: 1px solid #999;
+                background-color: #f0f0f0; color: #333;
+                font-weight: bold; font-size: 13px; padding: 0px;
+                min-width: 20px; min-height: 20px;
             }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
+            QPushButton:hover { background-color: #e0e0e0; }
+            QPushButton:pressed { background-color: #d0d0d0; }
         """
 
-        self._zoom_out_btn = QPushButton("\u2212")  # Unicode minus sign
+        self._zoom_out_btn = QPushButton("\u2212")
         self._zoom_out_btn.setFixedSize(20, 20)
         self._zoom_out_btn.setToolTip("Zoom Out (Ctrl+-)")
         self._zoom_out_btn.setStyleSheet(round_btn_style)
@@ -136,9 +170,9 @@ class MainWindow(QMainWindow):
 
         self._zoom_slider = QSlider(Qt.Horizontal)
         self._zoom_slider.setFixedWidth(120)
-        self._zoom_slider.setMinimum(25)   # 25%
-        self._zoom_slider.setMaximum(400)  # 400%
-        self._zoom_slider.setValue(100)    # 100%
+        self._zoom_slider.setMinimum(25)
+        self._zoom_slider.setMaximum(400)
+        self._zoom_slider.setValue(100)
         self._zoom_slider.setToolTip("Drag to zoom")
         self._zoom_slider.valueChanged.connect(self._on_zoom_slider_changed)
         self._status_bar.addPermanentWidget(self._zoom_slider)
@@ -159,19 +193,10 @@ class MainWindow(QMainWindow):
         self._zoom_fit_btn.setFixedSize(36, 22)
         self._zoom_fit_btn.setToolTip("Fit to View (Ctrl+0)")
         self._zoom_fit_btn.setStyleSheet("""
-            QPushButton {
-                border: 1px solid #999;
-                border-radius: 3px;
-                background-color: #f0f0f0;
-                color: #333;
-                padding: 2px 6px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
+            QPushButton { border: 1px solid #999; border-radius: 3px;
+                background-color: #f0f0f0; color: #333; padding: 2px 6px; }
+            QPushButton:hover { background-color: #e0e0e0; }
+            QPushButton:pressed { background-color: #d0d0d0; }
         """)
         self._zoom_fit_btn.clicked.connect(self._on_zoom_fit)
         self._status_bar.addPermanentWidget(self._zoom_fit_btn)
@@ -211,7 +236,6 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
-        # Export submenu
         export_menu = file_menu.addMenu("&Export Diagram")
 
         export_svg_action = QAction("As &SVG...", self)
@@ -250,25 +274,27 @@ class MainWindow(QMainWindow):
         # View menu
         view_menu = menubar.addMenu("&View")
 
-        dict_action = QAction("&Dictionary", self)
-        dict_action.setShortcut("Ctrl+1")
-        dict_action.triggered.connect(lambda: self._tabs.setCurrentIndex(0))
-        view_menu.addAction(dict_action)
-
-        mcd_action = QAction("&MCD", self)
-        mcd_action.setShortcut("Ctrl+2")
-        mcd_action.triggered.connect(lambda: self._tabs.setCurrentIndex(1))
+        mcd_action = QAction("&MCD Diagram", self)
+        mcd_action.setShortcut("Ctrl+1")
+        mcd_action.triggered.connect(lambda: self._tabs.setCurrentIndex(0))
         view_menu.addAction(mcd_action)
 
         mld_action = QAction("M&LD", self)
-        mld_action.setShortcut("Ctrl+3")
-        mld_action.triggered.connect(lambda: self._tabs.setCurrentIndex(2))
+        mld_action.setShortcut("Ctrl+2")
+        mld_action.triggered.connect(lambda: self._tabs.setCurrentIndex(1))
         view_menu.addAction(mld_action)
 
-        sql_action = QAction("&SQL", self)
-        sql_action.setShortcut("Ctrl+4")
-        sql_action.triggered.connect(lambda: self._tabs.setCurrentIndex(3))
-        view_menu.addAction(sql_action)
+        view_menu.addSeparator()
+
+        self._toggle_sidebar_action = QAction("Toggle &Sidebar", self)
+        self._toggle_sidebar_action.setShortcut("Ctrl+B")
+        self._toggle_sidebar_action.triggered.connect(self._toggle_sidebar)
+        view_menu.addAction(self._toggle_sidebar_action)
+
+        self._toggle_output_action = QAction("Toggle &Output Panel", self)
+        self._toggle_output_action.setShortcut("Ctrl+J")
+        self._toggle_output_action.triggered.connect(self._toggle_output)
+        view_menu.addAction(self._toggle_output_action)
 
         view_menu.addSeparator()
 
@@ -292,6 +318,24 @@ class MainWindow(QMainWindow):
         zoom_fit_action.triggered.connect(self._on_zoom_fit)
         view_menu.addAction(zoom_fit_action)
 
+        # Model menu (new)
+        model_menu = menubar.addMenu("&Model")
+
+        validate_action = QAction("&Validate", self)
+        validate_action.setShortcut("F5")
+        validate_action.triggered.connect(self._on_validate)
+        model_menu.addAction(validate_action)
+
+        model_menu.addSeparator()
+
+        gen_mld_action = QAction("Generate &MLD", self)
+        gen_mld_action.triggered.connect(self._on_generate_mld)
+        model_menu.addAction(gen_mld_action)
+
+        gen_sql_action = QAction("Generate &SQL", self)
+        gen_sql_action.triggered.connect(self._on_generate_sql)
+        model_menu.addAction(gen_sql_action)
+
         # Options menu
         options_menu = menubar.addMenu("&Options")
 
@@ -303,7 +347,6 @@ class MainWindow(QMainWindow):
 
         options_menu.addSeparator()
 
-        # Link style submenu
         link_style_menu = options_menu.addMenu("Link Style")
 
         self._curved_links_action = QAction("&Curved", self)
@@ -314,13 +357,11 @@ class MainWindow(QMainWindow):
 
         self._orthogonal_links_action = QAction("&Orthogonal", self)
         self._orthogonal_links_action.setCheckable(True)
-        self._orthogonal_links_action.setChecked(False)
         self._orthogonal_links_action.triggered.connect(lambda: self._on_link_style_changed("orthogonal"))
         link_style_menu.addAction(self._orthogonal_links_action)
 
         self._straight_links_action = QAction("&Straight", self)
         self._straight_links_action.setCheckable(True)
-        self._straight_links_action.setChecked(False)
         self._straight_links_action.triggered.connect(lambda: self._on_link_style_changed("straight"))
         link_style_menu.addAction(self._straight_links_action)
 
@@ -344,143 +385,194 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
-        # File actions
         toolbar.addAction("New").triggered.connect(self._on_new)
         toolbar.addAction("Open").triggered.connect(self._on_open)
         toolbar.addAction("Save").triggered.connect(self._on_save)
         toolbar.addSeparator()
+        toolbar.addAction("Add Entity").triggered.connect(self._on_add_entity)
+        toolbar.addAction("Add Association").triggered.connect(self._on_add_association)
+        toolbar.addAction("Add Link").triggered.connect(self._on_add_link)
+        toolbar.addSeparator()
+        toolbar.addAction("Validate").triggered.connect(self._on_validate)
 
     def _connect_signals(self):
         """Connect signals between components."""
+        # Canvas signals
         self._mcd_canvas.modified.connect(self._on_modified)
         self._mcd_canvas.zoom_changed.connect(self._on_zoom_changed)
         self._mld_view.mld_modified.connect(self._on_modified)
         self._tabs.currentChanged.connect(self._on_tab_changed)
 
+        # Sidebar signals
+        self._project_tree.item_selected.connect(self._on_tree_item_selected)
+        self._project_tree.item_double_clicked.connect(self._on_tree_item_double_clicked)
+        self._project_tree.add_entity_requested.connect(self._on_add_entity)
+        self._project_tree.add_association_requested.connect(self._on_add_association)
+        self._project_tree.delete_requested.connect(self._on_tree_delete)
+
+        # Properties panel
+        self._properties_panel.property_changed.connect(self._on_property_changed)
+
+    # =========================================================================
+    # View toggles
+    # =========================================================================
+
+    def _toggle_sidebar(self):
+        sizes = self._main_splitter.sizes()
+        if sizes[0] > 0:
+            self._main_splitter.setSizes([0, sum(sizes)])
+        else:
+            self._main_splitter.setSizes([220, sum(sizes) - 220])
+
+    def _toggle_output(self):
+        sizes = self._content_splitter.sizes()
+        if sizes[1] > 0:
+            self._content_splitter.setSizes([sum(sizes), 0])
+        else:
+            self._content_splitter.setSizes([sum(sizes) - 180, 180])
+
+    # =========================================================================
+    # Sidebar handlers
+    # =========================================================================
+
+    def _on_tree_item_selected(self, item_type: str, item_id: str):
+        """Handle tree selection — show properties and highlight on canvas."""
+        self._properties_panel.show_item(item_type, item_id)
+        # Select on canvas
+        self._mcd_canvas.clearSelection()
+        if item_type == "entity" and item_id in self._mcd_canvas._entity_items:
+            self._mcd_canvas._entity_items[item_id].setSelected(True)
+            self._mcd_canvas.centerOn(self._mcd_canvas._entity_items[item_id])
+        elif item_type == "association" and item_id in self._mcd_canvas._association_items:
+            self._mcd_canvas._association_items[item_id].setSelected(True)
+            self._mcd_canvas.centerOn(self._mcd_canvas._association_items[item_id])
+
+    def _on_tree_item_double_clicked(self, item_type: str, item_id: str):
+        """Handle tree double-click — open edit dialog."""
+        if item_type == "entity" and item_id in self._mcd_canvas._entity_items:
+            self._mcd_canvas._edit_entity(self._mcd_canvas._entity_items[item_id])
+        elif item_type == "association" and item_id in self._mcd_canvas._association_items:
+            self._mcd_canvas._edit_association(self._mcd_canvas._association_items[item_id])
+
+    def _on_tree_delete(self, item_type: str, item_id: str):
+        """Handle tree delete request."""
+        if item_type == "entity":
+            self._mcd_canvas._delete_entity(item_id)
+        elif item_type == "association":
+            self._mcd_canvas._delete_association(item_id)
+
+    def _on_property_changed(self):
+        """Handle property edit from sidebar."""
+        self._mcd_canvas.refresh()
+        self._on_modified()
+
+    # =========================================================================
+    # Model menu handlers
+    # =========================================================================
+
+    def _on_generate_mld(self):
+        self._mld_view.generate_mld()
+        self._tabs.setCurrentIndex(1)
+
+    def _on_generate_sql(self):
+        self._output_panel.refresh_sql()
+        self._output_panel.setCurrentIndex(2)  # SQL tab in output
+
+    # =========================================================================
+    # Original handlers (preserved from v1.3.1)
+    # =========================================================================
+
     def _update_title(self):
-        """Update window title based on project state."""
         title = f"{APP_NAME} {APP_VERSION}"
-        # Show project name instead of full path
         title += f" - {self._project.name}"
         if self._project.modified:
             title += " *"
         self.setWindowTitle(title)
-        # Update status bar with full path
         self._update_path_status()
 
     def _update_path_status(self):
-        """Update status bar with file path."""
         if self._project.file_path:
             self._status_label.setText(f"File: {self._project.file_path}")
         else:
             self._status_label.setText("New project (not saved)")
 
     def _update_status(self, message: str):
-        """Update status bar message temporarily."""
         self._status_label.setText(message)
 
     def _on_modified(self):
-        """Handle project modification."""
         self._project.modified = True
         self._update_title()
-        # Refresh dictionary view since attributes now come from entities
-        self._dictionary_view.refresh()
+        self._output_panel.refresh_dictionary()
+        self._project_tree.refresh()
+        self._minimap.refresh()
 
     def _on_tab_changed(self, index: int):
-        """Handle tab change - auto-generate MLD/SQL."""
-        if index == 2:  # MLD tab
+        if index == 1:  # MLD tab
             self._mld_view.generate_mld()
-        elif index == 3:  # SQL tab
-            self._sql_view.generate_sql()
+
+    def _set_project(self, project: Project):
+        """Update all views with a new project."""
+        self._project = project
+        self._output_panel.set_project(project)
+        self._mcd_canvas.set_project(project)
+        self._mcd_canvas.apply_colors(project.colors)
+        self._mld_view.set_project(project)
+        self._project_tree.set_project(project)
+        self._properties_panel.set_project(project)
+        self._minimap.refresh()
+        self._update_title()
 
     def _check_save(self) -> bool:
-        """Check if user wants to save unsaved changes. Returns True to proceed."""
         if not self._project.modified:
             return True
-
         result = QMessageBox.question(
             self, "Unsaved Changes",
             "Do you want to save changes before proceeding?",
             QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
             QMessageBox.Save
         )
-
         if result == QMessageBox.Save:
             return self._on_save()
         elif result == QMessageBox.Discard:
             return True
-        else:
-            return False
+        return False
 
     def _on_new(self):
-        """Create a new project."""
         if not self._check_save():
             return
-
-        self._project = Project()
-        self._dictionary_view.set_project(self._project)
-        self._mcd_canvas.set_project(self._project)
-        self._mcd_canvas.apply_colors(self._project.colors)
-        self._mld_view.set_project(self._project)
-        self._sql_view.set_project(self._project)
-        self._update_title()
+        self._set_project(Project())
         self._update_status("New project created")
 
     def _on_open(self):
-        """Open an existing project."""
         if not self._check_save():
             return
-
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open Project", "", FILE_FILTER
-        )
-
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", FILE_FILTER)
         if file_path:
             project = FileIO.load_project(file_path)
             if project:
-                self._project = project
-                self._dictionary_view.set_project(self._project)
-                self._mcd_canvas.set_project(self._project)
-                self._mcd_canvas.apply_colors(self._project.colors)
-                self._mld_view.set_project(self._project)
-                self._sql_view.set_project(self._project)
-                self._update_title()
+                self._set_project(project)
                 self._update_status(f"Opened: {file_path}")
             else:
-                QMessageBox.critical(
-                    self, "Error",
-                    f"Failed to open project:\n{file_path}"
-                )
+                QMessageBox.critical(self, "Error", f"Failed to open project:\n{file_path}")
 
     def _on_import_msd(self):
-        """Import a project from an MSD file."""
         if not self._check_save():
             return
-
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import MSD File", "", MSD_FILE_FILTER
-        )
-
+        file_path, _ = QFileDialog.getOpenFileName(self, "Import MSD File", "", MSD_FILE_FILTER)
         if file_path:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     source = f.read()
             except OSError:
-                QMessageBox.critical(
-                    self, "Error",
-                    f"Failed to read file:\n{file_path}"
-                )
+                QMessageBox.critical(self, "Error", f"Failed to read file:\n{file_path}")
                 return
 
             from ..msd import MSDParser, MSDProjectBuilder
-
             parser = MSDParser()
             parse_result = parser.parse(source, filename=file_path)
-
             builder = MSDProjectBuilder()
             project, errors = builder.build(parse_result)
 
-            # Show errors/warnings if any
             fatal_errors = [e for e in errors if e.severity == "error"]
             warnings = [e for e in errors if e.severity == "warning"]
 
@@ -498,21 +590,13 @@ class MainWindow(QMainWindow):
                 msg += "\n".join(f"- {e}" for e in warnings)
                 QMessageBox.warning(self, "Import Warnings", msg)
 
-            self._project = project
-            self._dictionary_view.set_project(self._project)
-            self._mcd_canvas.set_project(self._project)
-            self._mcd_canvas.apply_colors(self._project.colors)
-            self._mld_view.set_project(self._project)
-            self._sql_view.set_project(self._project)
-            self._update_title()
+            self._set_project(project)
             self._update_status(f"Imported MSD: {file_path}")
             self._mcd_canvas.zoom_fit()
 
     def _on_save(self) -> bool:
-        """Save the current project."""
         if not self._project.file_path:
             return self._on_save_as()
-
         if FileIO.save_project(self._project, self._project.file_path):
             self._update_title()
             self._update_status(f"Saved: {self._project.file_path}")
@@ -522,21 +606,12 @@ class MainWindow(QMainWindow):
             return False
 
     def _on_save_as(self) -> bool:
-        """Save the project with a new name."""
-        import os
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Project", "", FILE_FILTER
-        )
-
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Project", "", FILE_FILTER)
         if file_path:
-            # Ensure correct extension
             if not file_path.endswith(".asip"):
                 file_path += ".asip"
-
-            # Set project name from filename (without extension)
             basename = os.path.basename(file_path)
             self._project.name = os.path.splitext(basename)[0]
-
             if FileIO.save_project(self._project, file_path):
                 self._update_title()
                 self._update_status(f"Saved: {file_path}")
@@ -544,14 +619,10 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.critical(self, "Error", "Failed to save project.")
                 return False
-
         return False
 
     def _on_export_svg(self):
-        """Export diagram as SVG."""
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export as SVG", "", "SVG Files (*.svg)"
-        )
+        file_path, _ = QFileDialog.getSaveFileName(self, "Export as SVG", "", "SVG Files (*.svg)")
         if file_path:
             if not file_path.endswith(".svg"):
                 file_path += ".svg"
@@ -561,10 +632,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", "Failed to export as SVG.")
 
     def _on_export_png(self):
-        """Export diagram as PNG."""
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export as PNG", "", "PNG Files (*.png)"
-        )
+        file_path, _ = QFileDialog.getSaveFileName(self, "Export as PNG", "", "PNG Files (*.png)")
         if file_path:
             if not file_path.endswith(".png"):
                 file_path += ".png"
@@ -574,10 +642,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", "Failed to export as PNG.")
 
     def _on_export_pdf(self):
-        """Export diagram as PDF."""
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export as PDF", "", "PDF Files (*.pdf)"
-        )
+        file_path, _ = QFileDialog.getSaveFileName(self, "Export as PDF", "", "PDF Files (*.pdf)")
         if file_path:
             if not file_path.endswith(".pdf"):
                 file_path += ".pdf"
@@ -587,58 +652,28 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", "Failed to export as PDF.")
 
     def _on_add_entity(self):
-        """Add entity via MCD canvas."""
-        self._tabs.setCurrentIndex(1)  # Switch to MCD tab
+        self._tabs.setCurrentIndex(0)
         self._mcd_canvas.add_entity_at_center()
 
     def _on_add_association(self):
-        """Add association via MCD canvas."""
-        self._tabs.setCurrentIndex(1)
+        self._tabs.setCurrentIndex(0)
         self._mcd_canvas.add_association_at_center()
 
     def _on_add_link(self):
-        """Add link via MCD canvas."""
-        self._tabs.setCurrentIndex(1)
+        self._tabs.setCurrentIndex(0)
         self._mcd_canvas.add_link()
 
     def _on_delete_selected(self):
-        """Delete selected items."""
         self._mcd_canvas.delete_selected()
 
     def _on_toggle_attributes(self, checked: bool):
-        """Toggle showing attributes in entities."""
-        self._mcd_canvas.toggle_show_attributes(checked)
+        self._mcd_canvas.set_show_attributes(checked)
 
     def _on_validate(self):
-        """Validate the MCD model."""
-        from PySide6.QtWidgets import QSpacerItem, QSizePolicy
-
-        controller = MCDController(self._project)
-        errors = controller.validate()
-
-        if errors:
-            msg = "Validation found the following issues:\n\n"
-            msg += "\n".join(f"- {e}" for e in errors)
-            msgbox = QMessageBox(QMessageBox.Warning, "Validation Issues", msg, QMessageBox.Ok, self)
-        else:
-            stats = controller.get_statistics()
-            msg = "Model is valid!\n\n"
-            msg += f"Attributes: {stats['attributes']}\n"
-            msg += f"Entities: {stats['entities']}\n"
-            msg += f"Associations: {stats['associations']}\n"
-            msg += f"Links: {stats['links']}"
-            msgbox = QMessageBox(QMessageBox.Information, "Validation Passed", msg, QMessageBox.Ok, self)
-
-        # Force wider dialog using spacer
-        spacer = QSpacerItem(400, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        layout = msgbox.layout()
-        layout.addItem(spacer, layout.rowCount(), 0, 1, layout.columnCount())
-        msgbox.exec()
+        self._output_panel.run_validation(self._project)
 
     def _on_project_properties(self):
-        """Show project properties dialog."""
         from .dialogs.project_properties_dialog import ProjectPropertiesDialog
-
         dialog = ProjectPropertiesDialog(self._project, parent=self)
         if dialog.exec():
             dialog.apply_to_project()
@@ -647,46 +682,28 @@ class MainWindow(QMainWindow):
             self._update_status("Project properties updated")
 
     def _on_about(self):
-        """Show about dialog."""
         from PySide6.QtWidgets import QSpacerItem, QSizePolicy
-
         msgbox = QMessageBox(self)
         msgbox.setWindowTitle(f"About {APP_NAME}")
-        msgbox.setText(
-            f"<h2>{APP_NAME}</h2>"
-            f"<p><b>Version {APP_VERSION}</b></p>"
-        )
+        msgbox.setText(f"<h2>{APP_NAME}</h2><p><b>Version {APP_VERSION}</b></p>")
         msgbox.setInformativeText(
             "<p>A modern MERISE database modeling tool.</p>"
-            "<p>Built with Python and PySide6.</p>"
-            "<br>"
+            "<p>Built with Python and PySide6.</p><br>"
             "<p><b>Author:</b> Achraf SOLTANI</p>"
         )
-
-        # Make dialog wider
         spacer = QSpacerItem(450, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
         layout = msgbox.layout()
         layout.addItem(spacer, layout.rowCount(), 0, 1, layout.columnCount())
-
         msgbox.exec()
 
-    def _on_toggle_attributes(self, checked: bool):
-        """Toggle attribute visibility in MCD."""
-        self._mcd_canvas.set_show_attributes(checked)
-
     def _on_link_style_changed(self, style: str):
-        """Change link style in MCD."""
-        # Update checkmarks
         self._curved_links_action.setChecked(style == "curved")
         self._orthogonal_links_action.setChecked(style == "orthogonal")
         self._straight_links_action.setChecked(style == "straight")
-        # Apply to canvas
         self._mcd_canvas.set_link_style(style)
 
     def _on_diagram_colors(self):
-        """Show diagram colors dialog."""
         from .dialogs.color_settings_dialog import ColorSettingsDialog
-
         dialog = ColorSettingsDialog(self._project, parent=self)
         if dialog.exec():
             dialog.apply_to_project()
@@ -696,35 +713,27 @@ class MainWindow(QMainWindow):
             self._update_status("Diagram colors updated")
 
     def _on_zoom_in(self):
-        """Zoom in on MCD canvas."""
         self._mcd_canvas.zoom_in()
 
     def _on_zoom_out(self):
-        """Zoom out on MCD canvas."""
         self._mcd_canvas.zoom_out()
 
     def _on_zoom_reset(self):
-        """Reset MCD canvas zoom to 100%."""
         self._mcd_canvas.zoom_reset()
 
     def _on_zoom_fit(self):
-        """Fit MCD canvas to view."""
         self._mcd_canvas.zoom_fit()
 
     def _on_zoom_changed(self, percentage: int):
-        """Update zoom label and slider when zoom changes."""
         self._zoom_label.setText(f"{percentage}%")
-        # Update slider without triggering another zoom change
         self._zoom_slider.blockSignals(True)
         self._zoom_slider.setValue(percentage)
         self._zoom_slider.blockSignals(False)
 
     def _on_zoom_slider_changed(self, value: int):
-        """Handle zoom slider changes."""
         self._mcd_canvas._apply_zoom(value / 100.0)
 
     def closeEvent(self, event):
-        """Handle window close event."""
         if self._check_save():
             event.accept()
         else:
