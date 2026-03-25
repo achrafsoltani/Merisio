@@ -1,0 +1,210 @@
+{
+  "version": "2.1",
+  "metadata": {
+    "name": "E-Commerce",
+    "description": "Classic e-commerce database model with customers, products, orders, and categories.",
+    "author": "Merisio",
+    "created_at": "2026-03-25T16:00:00",
+    "modified_at": "2026-03-25T16:00:00"
+  },
+  "mcd": {
+    "entities": [
+      {
+        "id": "e-customer",
+        "name": "Customer",
+        "attributes": [
+          {"name": "customer_id", "type": "INT", "size": null, "pk": true},
+          {"name": "first_name", "type": "VARCHAR", "size": 50, "pk": false},
+          {"name": "last_name", "type": "VARCHAR", "size": 50, "pk": false},
+          {"name": "email", "type": "VARCHAR", "size": 100, "pk": false},
+          {"name": "phone", "type": "VARCHAR", "size": 20, "pk": false}
+        ],
+        "x": 80,
+        "y": 60
+      },
+      {
+        "id": "e-order",
+        "name": "Order",
+        "attributes": [
+          {"name": "order_id", "type": "INT", "size": null, "pk": true},
+          {"name": "order_date", "type": "DATE", "size": null, "pk": false},
+          {"name": "status", "type": "VARCHAR", "size": 20, "pk": false},
+          {"name": "total_amount", "type": "DECIMAL", "size": null, "pk": false}
+        ],
+        "x": 480,
+        "y": 60
+      },
+      {
+        "id": "e-product",
+        "name": "Product",
+        "attributes": [
+          {"name": "product_id", "type": "INT", "size": null, "pk": true},
+          {"name": "name", "type": "VARCHAR", "size": 100, "pk": false},
+          {"name": "description", "type": "TEXT", "size": null, "pk": false},
+          {"name": "price", "type": "DECIMAL", "size": null, "pk": false},
+          {"name": "stock", "type": "INT", "size": null, "pk": false}
+        ],
+        "x": 480,
+        "y": 380
+      },
+      {
+        "id": "e-category",
+        "name": "Category",
+        "attributes": [
+          {"name": "category_id", "type": "INT", "size": null, "pk": true},
+          {"name": "name", "type": "VARCHAR", "size": 50, "pk": false},
+          {"name": "description", "type": "TEXT", "size": null, "pk": false}
+        ],
+        "x": 880,
+        "y": 380
+      },
+      {
+        "id": "e-address",
+        "name": "Address",
+        "attributes": [
+          {"name": "address_id", "type": "INT", "size": null, "pk": true},
+          {"name": "street", "type": "VARCHAR", "size": 200, "pk": false},
+          {"name": "city", "type": "VARCHAR", "size": 50, "pk": false},
+          {"name": "zip_code", "type": "VARCHAR", "size": 10, "pk": false},
+          {"name": "country", "type": "VARCHAR", "size": 50, "pk": false}
+        ],
+        "x": 80,
+        "y": 380
+      },
+      {
+        "id": "e-payment",
+        "name": "Payment",
+        "attributes": [
+          {"name": "payment_id", "type": "INT", "size": null, "pk": true},
+          {"name": "method", "type": "VARCHAR", "size": 30, "pk": false},
+          {"name": "amount", "type": "DECIMAL", "size": null, "pk": false},
+          {"name": "payment_date", "type": "DATE", "size": null, "pk": false}
+        ],
+        "x": 880,
+        "y": 60
+      }
+    ],
+    "associations": [
+      {
+        "id": "a-places",
+        "name": "places",
+        "attributes": [],
+        "x": 300,
+        "y": 60
+      },
+      {
+        "id": "a-contains",
+        "name": "contains",
+        "attributes": [
+          {"name": "quantity", "type": "INT", "size": null, "pk": false},
+          {"name": "unit_price", "type": "DECIMAL", "size": null, "pk": false}
+        ],
+        "x": 480,
+        "y": 220
+      },
+      {
+        "id": "a-belongs_to",
+        "name": "belongs_to",
+        "attributes": [],
+        "x": 700,
+        "y": 380
+      },
+      {
+        "id": "a-lives_at",
+        "name": "lives_at",
+        "attributes": [],
+        "x": 80,
+        "y": 220
+      },
+      {
+        "id": "a-paid_by",
+        "name": "paid_by",
+        "attributes": [],
+        "x": 700,
+        "y": 60
+      }
+    ],
+    "links": [
+      {
+        "id": "l-customer-places",
+        "entity_id": "e-customer",
+        "association_id": "a-places",
+        "card_min": "1",
+        "card_max": "N"
+      },
+      {
+        "id": "l-order-places",
+        "entity_id": "e-order",
+        "association_id": "a-places",
+        "card_min": "1",
+        "card_max": "1"
+      },
+      {
+        "id": "l-order-contains",
+        "entity_id": "e-order",
+        "association_id": "a-contains",
+        "card_min": "1",
+        "card_max": "N"
+      },
+      {
+        "id": "l-product-contains",
+        "entity_id": "e-product",
+        "association_id": "a-contains",
+        "card_min": "0",
+        "card_max": "N"
+      },
+      {
+        "id": "l-product-belongs",
+        "entity_id": "e-product",
+        "association_id": "a-belongs_to",
+        "card_min": "1",
+        "card_max": "1"
+      },
+      {
+        "id": "l-category-belongs",
+        "entity_id": "e-category",
+        "association_id": "a-belongs_to",
+        "card_min": "0",
+        "card_max": "N"
+      },
+      {
+        "id": "l-customer-lives",
+        "entity_id": "e-customer",
+        "association_id": "a-lives_at",
+        "card_min": "1",
+        "card_max": "N"
+      },
+      {
+        "id": "l-address-lives",
+        "entity_id": "e-address",
+        "association_id": "a-lives_at",
+        "card_min": "0",
+        "card_max": "N"
+      },
+      {
+        "id": "l-order-paid",
+        "entity_id": "e-order",
+        "association_id": "a-paid_by",
+        "card_min": "1",
+        "card_max": "1"
+      },
+      {
+        "id": "l-payment-paid",
+        "entity_id": "e-payment",
+        "association_id": "a-paid_by",
+        "card_min": "1",
+        "card_max": "1"
+      }
+    ]
+  },
+  "mld": {
+    "column_overrides": {}
+  },
+  "colors": {
+    "entity_fill": "#E3F2FD",
+    "entity_border": "#1976D2",
+    "association_fill": "#FFF3E0",
+    "association_border": "#F57C00",
+    "link_color": "#000000"
+  }
+}
