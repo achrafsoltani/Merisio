@@ -401,4 +401,23 @@ def get_stylesheet() -> str:
     QDialogButtonBox QPushButton {{
         min-width: 80px;
     }}
+
+    /* Splitter handles */
+    QSplitter::handle {{
+        background-color: {COLORS['border']};
+    }}
+    QSplitter::handle:horizontal {{
+        width: 2px;
+    }}
+    QSplitter::handle:vertical {{
+        height: 2px;
+    }}
+    QSplitter::handle:hover {{
+        background-color: {COLORS['primary']};
+    }}
+
+    /* Sidebar sections */
+    QSplitter > QWidget {{
+        background-color: {COLORS['bg_main']};
+    }}
     """
