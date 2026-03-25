@@ -456,12 +456,20 @@ class MainWindow(QMainWindow):
             self._mcd_canvas.delete_association_by_id(item_id)
 
     def _on_canvas_selection_changed(self, item_type: str, item_id: str):
-        """Handle canvas selection — update tree and properties panel."""
+        """Handle canvas selection — update tree, properties, and dictionary."""
         if item_type and item_id:
             self._properties_panel.show_item(item_type, item_id)
             self._project_tree.select_item(item_type, item_id)
+            # Highlight in dictionary
+            if item_type == "entity":
+                entity = self._project.get_entity(item_id)
+                if entity:
+                    self._output_panel.highlight_entity(entity.name)
+            else:
+                self._output_panel.clear_highlight()
         else:
             self._properties_panel.clear_selection()
+            self._output_panel.clear_highlight()
 
     def _on_property_changed(self):
         """Handle property edit from sidebar."""

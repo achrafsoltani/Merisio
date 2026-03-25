@@ -18,6 +18,7 @@ class DictionaryTableModel(QAbstractTableModel):
         super().__init__(parent)
         self._project = project
         self._data: list[tuple[str, Attribute]] = []
+        self._highlighted_entity: str = ""
         self.refresh()
 
     def set_project(self, project: Project):
@@ -62,6 +63,8 @@ class DictionaryTableModel(QAbstractTableModel):
                 return "Yes" if attr.is_primary_key else "No"
 
         elif role == Qt.BackgroundRole:
+            if self._highlighted_entity and entity_name == self._highlighted_entity:
+                return QColor("#E3F2FD")  # Light blue for selected entity
             if attr.is_primary_key:
                 return QColor("#FFFDE7")  # Light yellow for PKs
 
@@ -125,3 +128,15 @@ class DictionaryView(QWidget):
     def refresh(self):
         """Refresh the view from the project."""
         self._model.refresh()
+
+    def highlight_entity(self, entity_name: str):
+        """Highlight all rows for the given entity."""
+        self._model._highlighted_entity = entity_name
+        self._model.dataChanged.emit(
+            self._model.index(0, 0),
+            self._model.index(self._model.rowCount() - 1, self._model.columnCount() - 1),
+        )
+
+    def clear_highlight(self):
+        """Clear row highlighting."""
+        self.highlight_entity("")

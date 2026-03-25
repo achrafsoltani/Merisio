@@ -32,6 +32,9 @@ class OutputPanel(QTabWidget):
 
         self.setMaximumHeight(250)
 
+        # Auto-refresh SQL when its tab is shown
+        self.currentChanged.connect(self._on_tab_changed)
+
     @property
     def dictionary_view(self) -> DictionaryView:
         return self._dictionary_view
@@ -45,6 +48,18 @@ class OutputPanel(QTabWidget):
         self._dictionary_view.set_project(project)
         self._sql_view.set_project(project)
         self._validation_text.clear()
+
+    def _on_tab_changed(self, index: int):
+        if index == 2:  # SQL tab
+            self._sql_view.generate_sql()
+
+    def highlight_entity(self, entity_name: str):
+        """Highlight rows in dictionary for the given entity."""
+        self._dictionary_view.highlight_entity(entity_name)
+
+    def clear_highlight(self):
+        """Clear dictionary highlights."""
+        self._dictionary_view.clear_highlight()
 
     def refresh_dictionary(self):
         self._dictionary_view.refresh()

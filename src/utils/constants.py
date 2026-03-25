@@ -1,7 +1,7 @@
 # Application constants
 
 APP_NAME = "Merisio"
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.4.3"
 FILE_EXTENSION = ".merisio"
 FILE_FILTER = "Merisio Projects (*.merisio);;All Files (*)"
 MSD_FILE_EXTENSION = ".msd"
