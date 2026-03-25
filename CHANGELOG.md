@@ -5,6 +5,54 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-03-25
+
+### Added
+- Properties panel Edit button opens full entity/association dialog
+- Link cardinality inline editing (Min/Max dropdowns) in properties panel
+- Canvas emits selection_changed for links
+
+### Changed
+- Native Qt combo box rendering instead of custom CSS (cleaner on KDE/GNOME)
+
+## [1.4.3] - 2026-03-25
+
+### Fixed
+- SQL tab auto-generates when selected in output panel
+- Dictionary highlights selected entity's attributes in blue
+- Canvas selection propagates highlight to dictionary
+
+## [1.4.2] - 2026-03-25
+
+### Fixed
+- Minimap viewport tracking verified working with zoom/scroll
+- Click-to-navigate in minimap verified working
+
+## [1.4.1] - 2026-03-25
+
+### Fixed
+- Bidirectional sync between canvas, project tree, and properties panel
+- Canvas selection updates tree highlight and properties
+- Tree selection highlights item on canvas and centres view
+- Fixed private method access in MCDCanvas (added public wrappers)
+- Fixed project tree using correct API (get_all_entities/associations)
+- Fixed properties panel attribute type field (data_type not type)
+
+## [1.4.0] - 2026-03-25
+
+### Added
+- MySQL Workbench-inspired layout with QSplitter-based design
+- Left sidebar: minimap (bird's eye diagram overview), project tree (entities/associations navigator), properties panel
+- Bottom output panel with Dictionary, Validation, and SQL Preview tabs
+- Model menu: Validate (F5), Generate MLD, Generate SQL
+- Toggle sidebar (Ctrl+B) and output panel (Ctrl+J)
+- Enhanced toolbar: Add Entity, Add Association, Add Link, Validate
+
+### Changed
+- Replaced flat 4-tab layout (Dictionary, MCD, MLD, SQL) with sidebar + central tabs + bottom panel
+- Dictionary moved from top-level tab to bottom output panel
+- Toned down theme: neutral grey buttons, subtle tab accents, native Qt combo box rendering
+
 ## [1.3.1] - 2026-02-06
 
 ### Added
@@ -81,6 +129,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux desktop integration
 - Keyboard shortcuts (Ctrl+1-4 for tabs, Ctrl+N/O/S for file operations)
 
+[1.5.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.3...v1.5.0
+[1.4.3]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.2...v1.4.3
+[1.4.2]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/AchrafSoltani/Merisio/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.1.0...v1.2.0

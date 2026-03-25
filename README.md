@@ -2,7 +2,7 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
-![Version](https://img.shields.io/badge/version-1.3.1-blue)
+![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
 ![Python](https://img.shields.io/badge/python-3.11+-yellow)
 
@@ -16,13 +16,22 @@ A modern MERISE database modeling tool built with Python and PySide6.
   - Toggle attribute visibility
   - Zoom controls with slider (25%-400%)
   - Customizable colors for entities, associations, and links
+- **Left Sidebar** - MySQL Workbench-inspired collapsible panel (Ctrl+B)
+  - Minimap: bird's eye diagram overview with click-to-navigate
+  - Project Tree: entities and associations navigator with selection sync
+  - Properties Panel: view and edit selected entity, association, or link
+  - Link cardinality inline editing (Min/Max dropdowns)
+  - Edit button opens full entity/association dialog
+- **Bottom Output Panel** - Collapsible panel (Ctrl+J)
+  - Dictionary: attribute overview with selection highlighting
+  - Validation: model validation results (F5 to validate)
+  - SQL Preview: auto-generated PostgreSQL DDL
 - **Export** - Export diagrams to SVG, PNG, or PDF formats
 - **CLI Tool** (`merisio-cli`) - Command-line interface for batch processing
   - Validate MCD models
   - Generate PostgreSQL DDL
   - Inspect MLD tables
   - Export diagrams (PNG, SVG, PDF) headlessly
-- **Data Dictionary** - Overview of all attributes across entities
 - **MLD View** - Logical Data Model with table/column tree view
   - Editable column names (right-click or double-click to rename)
   - Custom names saved in project and used in SQL generation
@@ -166,9 +175,11 @@ merisio-cli --version   # Print CLI version and exit
 1. **Create Entities** - Right-click on the MCD canvas or use the toolbar to add entities
 2. **Create Associations** - Add associations to define relationships between entities
 3. **Link Them** - Connect entities to associations with cardinalities
-4. **View MLD** - Switch to MLD tab to see the logical model (double-click columns to rename)
-5. **Generate SQL** - Switch to SQL tab to see PostgreSQL DDL statements
-6. **Save Project** - File > Save to save your work
+4. **Use the Sidebar** - Browse entities/associations in the project tree, inspect and edit properties in the properties panel
+5. **View MLD** - Switch to MLD tab to see the logical model (double-click columns to rename)
+6. **Validate** - Model > Validate (F5) or check the Validation tab in the output panel
+7. **Generate SQL** - Switch to SQL tab or check the SQL Preview tab in the output panel
+8. **Save Project** - File > Save to save your work
 
 ### CLI Usage
 
@@ -216,10 +227,11 @@ merisio-cli project.merisio export --format png -o diagram.png --scale 3.0
 | Ctrl+N | New Project |
 | Ctrl+O | Open Project |
 | Ctrl+S | Save Project |
-| Ctrl+1 | Dictionary Tab |
-| Ctrl+2 | MCD Tab |
-| Ctrl+3 | MLD Tab |
-| Ctrl+4 | SQL Tab |
+| Ctrl+B | Toggle Sidebar |
+| Ctrl+J | Toggle Output Panel |
+| F5 | Validate Model |
+| Ctrl+1 | MCD Tab |
+| Ctrl+2 | MLD Tab |
 | Delete | Delete Selected |
 | Ctrl+Scroll | Zoom In/Out |
 | Ctrl++ | Zoom In |
@@ -256,6 +268,8 @@ Merisio/
 ├── src/
 │   ├── models/             # Data models (Entity, Association, Link, Project)
 │   ├── views/              # UI components (Canvas, Dialogs, Views)
+│   │   ├── sidebar/        # Left sidebar (Minimap, Project Tree, Properties Panel)
+│   │   └── output_panel.py # Bottom output panel (Dictionary, Validation, SQL Preview)
 │   ├── controllers/        # Business logic (MLD transformer, SQL generator)
 │   ├── export/             # Headless diagram renderer (used by CLI)
 │   └── utils/              # Utilities, constants, theme

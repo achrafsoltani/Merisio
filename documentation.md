@@ -94,8 +94,7 @@ cd Merisio-linux-x64
 ### Creating Your First Model
 
 1. **Create Entities**
-   - Go to the "MCD" tab
-   - Right-click on the canvas or use the toolbar to click "Add Entity"
+   - On the MCD canvas, right-click or use the toolbar to click "Add Entity"
    - Enter entity name (e.g., `Client`)
    - Add attributes: enter name (e.g., `id_client`), select type (e.g., `INT`), check "Primary Key"
    - Repeat for other attributes (e.g., `nom` VARCHAR(100), `email` VARCHAR(255))
@@ -110,13 +109,18 @@ cd Merisio-linux-x64
    - Select entity and association to connect
    - Choose cardinality (e.g., `1,N`)
 
-4. **View the MLD**
-   - Switch to the "MLD" tab to see the auto-generated logical data model
+4. **Inspect with the Sidebar**
+   - Browse entities and associations in the project tree (left sidebar)
+   - Click an item to select it on the canvas and view its properties
+   - Use the properties panel Edit button or inline cardinality dropdowns to make changes
+
+5. **View the MLD**
+   - Switch to the MLD tab (Ctrl+2) to see the auto-generated logical data model
    - Double-click column names to rename them
 
-5. **Generate SQL**
-   - Go to the "SQL" tab
-   - View or copy the generated PostgreSQL DDL
+6. **Validate and Generate SQL**
+   - Press F5 or use Model > Validate to check the model
+   - Check the SQL Preview tab in the bottom output panel, or use Model > Generate SQL
 
 ---
 
@@ -207,6 +211,26 @@ Export diagrams via File > Export Diagram:
 
 ## GUI Usage
 
+### Layout
+
+The interface uses a MySQL Workbench-inspired layout with three main areas:
+
+- **Left Sidebar** (toggle with Ctrl+B) — contains three stacked panels:
+  - **Minimap** — bird's eye overview of the MCD diagram; click to navigate, viewport tracks zoom and scroll
+  - **Project Tree** — hierarchical list of all entities and associations; click to select and centre on canvas
+  - **Properties Panel** — displays details of the selected entity, association, or link; includes an Edit button to open the full dialog, and inline Min/Max dropdowns for link cardinality editing
+
+- **Central Area** — tabbed workspace:
+  - **MCD** (Ctrl+1) — visual diagram canvas
+  - **MLD** (Ctrl+2) — logical data model tree view
+
+- **Bottom Output Panel** (toggle with Ctrl+J) — tabbed panel:
+  - **Dictionary** — attribute overview; highlights selected entity's attributes in blue
+  - **Validation** — model validation results (also triggered via Model > Validate or F5)
+  - **SQL Preview** — auto-generated PostgreSQL DDL, refreshed when the tab is selected
+
+Selection is synchronised bidirectionally: clicking an item on the canvas updates the project tree and properties panel, and clicking in the project tree highlights and centres the item on the canvas.
+
 ### Command-Line Flags
 
 The GUI binary accepts the following flags:
@@ -228,16 +252,25 @@ When launched without arguments, the graphical editor opens.
 | Ctrl+O | Open project |
 | Ctrl+S | Save project |
 | Ctrl+Shift+S | Save as |
-| Ctrl+1 | Switch to Dictionary tab |
-| Ctrl+2 | Switch to MCD tab |
-| Ctrl+3 | Switch to MLD tab |
-| Ctrl+4 | Switch to SQL tab |
+| Ctrl+B | Toggle sidebar |
+| Ctrl+J | Toggle output panel |
+| F5 | Validate model |
+| Ctrl+1 | Switch to MCD tab |
+| Ctrl+2 | Switch to MLD tab |
 | Delete | Delete selected items |
 | Ctrl+Scroll | Zoom in/out (MCD canvas) |
 | Ctrl++ | Zoom in |
 | Ctrl+- | Zoom out |
 | Ctrl+0 | Fit to view |
 | Ctrl+Shift+0 | Reset zoom (100%) |
+
+### Model Menu
+
+| Action | Description |
+|--------|-------------|
+| Validate (F5) | Run model validation and display results in the Validation output tab |
+| Generate MLD | Transform MCD to logical data model |
+| Generate SQL | Generate PostgreSQL DDL from the current model |
 
 ### Options Menu
 
@@ -253,9 +286,11 @@ When launched without arguments, the graphical editor opens.
 
 1. **Start with Entities** - Create entities with their attributes before creating associations
 2. **Use Primary Keys** - Every entity should have at least one PK attribute
-3. **Check the MLD** - Review the auto-generated logical model after creating links
-4. **Rename Columns** - Use the MLD view to rename auto-generated column names
-5. **Save Frequently** - Save your work to avoid losing changes
+3. **Use the Sidebar** - Browse the project tree to navigate large models; use the properties panel to inspect and edit items without opening dialogs
+4. **Check the MLD** - Review the auto-generated logical model after creating links
+5. **Rename Columns** - Use the MLD view to rename auto-generated column names
+6. **Validate Often** - Press F5 or check the Validation tab to catch issues early
+7. **Save Frequently** - Save your work to avoid losing changes
 
 ### Validation Rules
 
@@ -477,12 +512,17 @@ Merisio/
 │   │   ├── mld.py          # MLD table/column models
 │   │   └── project.py      # Project container
 │   ├── views/              # UI components (PySide6)
-│   │   ├── main_window.py       # Main window with tabs
+│   │   ├── main_window.py       # Main window with splitter layout
 │   │   ├── dictionary_view.py   # Dictionary table
 │   │   ├── mcd_canvas.py        # Graphics view
 │   │   ├── mcd_items.py         # Graphics items
 │   │   ├── mld_view.py          # MLD tree view
 │   │   ├── sql_view.py          # SQL display
+│   │   ├── output_panel.py      # Bottom output panel (Dictionary, Validation, SQL Preview)
+│   │   ├── sidebar/             # Left sidebar
+│   │   │   ├── minimap.py       # Bird's eye diagram overview
+│   │   │   ├── project_tree.py  # Entities/associations navigator
+│   │   │   └── properties_panel.py  # Selected item properties editor
 │   │   └── dialogs/             # Input dialogs
 │   ├── controllers/        # Business logic
 │   │   ├── mcd_controller.py    # Validation and statistics
