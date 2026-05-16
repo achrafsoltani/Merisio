@@ -11,6 +11,8 @@ class Link:
     cardinality_min: str = "0"  # "0" or "1"
     cardinality_max: str = "N"  # "1" or "N"
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    # User-defined bend points in absolute scene coordinates. Empty = auto-routed.
+    waypoints: list[list[float]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -19,7 +21,8 @@ class Link:
             "entity_id": self.entity_id,
             "association_id": self.association_id,
             "card_min": self.cardinality_min,
-            "card_max": self.cardinality_max
+            "card_max": self.cardinality_max,
+            "waypoints": self.waypoints,
         }
 
     @classmethod
@@ -30,7 +33,8 @@ class Link:
             entity_id=data["entity_id"],
             association_id=data["association_id"],
             cardinality_min=data.get("card_min", "0"),
-            cardinality_max=data.get("card_max", "N")
+            cardinality_max=data.get("card_max", "N"),
+            waypoints=data.get("waypoints", []),
         )
 
     @property

@@ -119,6 +119,31 @@ class TestLink:
         assert link.is_multiple() is False
         assert link.is_mandatory() is False
 
+    def test_default_waypoints_empty(self):
+        link = Link(entity_id="e1", association_id="a1")
+        assert link.waypoints == []
+
+    def test_round_trip_preserves_waypoints(self):
+        link = Link(
+            entity_id="e1",
+            association_id="a1",
+            waypoints=[[100.0, 200.0], [150.5, 250.5]],
+        )
+        restored = Link.from_dict(link.to_dict())
+        assert restored.waypoints == [[100.0, 200.0], [150.5, 250.5]]
+
+    def test_from_dict_backward_compat_without_waypoints(self):
+        # v2.1 files (and earlier) have no "waypoints" key — must load as empty list.
+        data = {
+            "id": "abc",
+            "entity_id": "e1",
+            "association_id": "a1",
+            "card_min": "0",
+            "card_max": "N",
+        }
+        link = Link.from_dict(data)
+        assert link.waypoints == []
+
 
 class TestDictionary:
     """Tests for Dictionary model (legacy, still used for backward compatibility)."""
