@@ -41,10 +41,10 @@ modules:
         EOF
 
       # Desktop entry
-      - install -Dm644 merisio.desktop /app/share/applications/com.github.achrafsoltani.Merisio.desktop
+      - install -Dm644 packaging/merisio.desktop /app/share/applications/com.github.achrafsoltani.Merisio.desktop
 
       # AppStream metadata
-      - install -Dm644 com.github.achrafsoltani.Merisio.metainfo.xml /app/share/metainfo/com.github.achrafsoltani.Merisio.metainfo.xml
+      - install -Dm644 packaging/com.github.achrafsoltani.Merisio.metainfo.xml /app/share/metainfo/com.github.achrafsoltani.Merisio.metainfo.xml
 
       # Icon
       - install -Dm644 resources/icons/app_icon.png /app/share/icons/hicolor/256x256/apps/com.github.achrafsoltani.Merisio.png

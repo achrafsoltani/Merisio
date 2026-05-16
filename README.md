@@ -256,8 +256,13 @@ Merisio/
 ├── main.py                 # GUI entry point
 ├── cli.py                  # CLI entry point (merisio-cli)
 ├── build.py                # Build script for PyInstaller
-├── merisio.desktop         # Linux desktop integration
 ├── requirements.txt        # Python dependencies
+├── packaging/              # Linux integration files
+│   ├── merisio.desktop                                # Desktop entry
+│   ├── com.github.achrafsoltani.Merisio.yml           # Flatpak manifest
+│   └── com.github.achrafsoltani.Merisio.metainfo.xml  # AppStream metadata
+├── snap/
+│   └── snapcraft.yaml      # Snap package manifest
 ├── man/
 │   ├── merisio.1           # GUI man page
 │   └── merisio-cli.1       # CLI man page

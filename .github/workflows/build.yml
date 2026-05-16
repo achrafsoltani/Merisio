@@ -45,7 +45,7 @@ jobs:
           cp dist/Merisio Merisio-linux-x64/
           cp dist/merisio-cli Merisio-linux-x64/
           cp README.md Merisio-linux-x64/
-          cp merisio.desktop Merisio-linux-x64/
+          cp packaging/merisio.desktop Merisio-linux-x64/
           cp resources/icons/app_icon.png Merisio-linux-x64/
           cp -r man Merisio-linux-x64/
           tar -czvf Merisio-linux-x64.tar.gz Merisio-linux-x64/
