@@ -259,3 +259,23 @@ class TestProject:
         assert len(all_attrs) == 2
         assert all_attrs[0][0] == "Client"  # entity name
         assert all_attrs[0][1].name == "id"  # attribute
+
+    def test_version_is_2_2(self):
+        assert Project.VERSION == "2.2"
+
+    def test_serialization_preserves_link_waypoints(self):
+        project = Project()
+        entity = Entity(name="Client")
+        project.add_entity(entity)
+        assoc = Association(name="Passer")
+        project.add_association(assoc)
+        link = Link(
+            entity_id=entity.id,
+            association_id=assoc.id,
+            waypoints=[[10.0, 20.0], [30.0, 40.0]],
+        )
+        project.add_link(link)
+
+        restored = Project.from_dict(project.to_dict())
+        restored_link = restored.get_all_links()[0]
+        assert restored_link.waypoints == [[10.0, 20.0], [30.0, 40.0]]

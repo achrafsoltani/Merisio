@@ -9,7 +9,7 @@ from .attribute import Attribute
 class Project:
     """Container for an entire AnalyseSI project."""
 
-    VERSION = "2.1"  # Version with metadata support
+    VERSION = "2.2"  # Adds Link.waypoints for user-shaped relation paths
 
     def __init__(self):
         self._entities: Dict[str, Entity] = {}
