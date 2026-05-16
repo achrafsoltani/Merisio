@@ -357,8 +357,17 @@ class AssociationItem(QGraphicsItem):
             link_item.update_position()
 
 
-def _curve_control(a: QPointF, b: QPointF) -> QPointF:
-    """Quadratic Bezier control point with a capped perpendicular offset."""
+def _curve_control(a: QPointF, b: QPointF, reference: QPointF = None) -> QPointF:
+    """Quadratic Bezier control point with a capped perpendicular offset.
+
+    If `reference` is provided, the perpendicular is flipped so the control
+    point lies on the side opposite the reference — curves bow AWAY from it.
+    Pass the diagram's centroid as reference to get an "outward bloom" effect
+    where every link bends away from the visual centre of the diagram, never
+    inward toward other items.
+
+    Without a reference, falls back to a consistent +Y / +X perpendicular so
+    mirrored links at least bend the same direction."""
     dx = b.x() - a.x()
     dy = b.y() - a.y()
     length = math.sqrt(dx * dx + dy * dy)
@@ -367,6 +376,15 @@ def _curve_control(a: QPointF, b: QPointF) -> QPointF:
         return mid
     perp_x = -dy / length
     perp_y = dx / length
+    if reference is not None:
+        to_ref_x = reference.x() - mid.x()
+        to_ref_y = reference.y() - mid.y()
+        if perp_x * to_ref_x + perp_y * to_ref_y > 0:
+            perp_x = -perp_x
+            perp_y = -perp_y
+    elif perp_y < 0 or (perp_y == 0 and perp_x < 0):
+        perp_x = -perp_x
+        perp_y = -perp_y
     curve_amount = min(length * 0.15, 30)
     return QPointF(mid.x() + perp_x * curve_amount, mid.y() + perp_y * curve_amount)
 
@@ -575,16 +593,17 @@ class LinkItem(QGraphicsPathItem):
                 path.lineTo(b)
 
         else:  # "curved"
+            centroid = self._compute_centroid()
             for i in range(len(points) - 1):
                 a, b = points[i], points[i + 1]
-                path.quadTo(_curve_control(a, b), b)
+                path.quadTo(_curve_control(a, b, centroid), b)
 
         self.setPath(path)
 
         # Cardinality label sits 20% along the first segment, near the entity.
         seg_a, seg_b = points[0], points[1]
         if LinkItem.link_style == "curved":
-            self._control = _curve_control(seg_a, seg_b)
+            self._control = _curve_control(seg_a, seg_b, self._compute_centroid())
         else:
             self._control = QPointF(
                 (self._p1.x() + self._p2.x()) / 2,
@@ -712,6 +731,25 @@ class LinkItem(QGraphicsPathItem):
         for i in reversed(redundant):
             del waypoints[i]
         return bool(redundant)
+
+    def _compute_centroid(self):
+        """Average position of every entity and association in the scene.
+        Used to bend curved links AWAY from the diagram's visual centre."""
+        scene = self.scene()
+        if scene is None:
+            return None
+        total_x = 0.0
+        total_y = 0.0
+        count = 0
+        for item in scene.items():
+            if isinstance(item, (EntityItem, AssociationItem)):
+                center = item.get_center()
+                total_x += center.x()
+                total_y += center.y()
+                count += 1
+        if count == 0:
+            return None
+        return QPointF(total_x / count, total_y / count)
 
     def _snap_to_line(self, proposed: QPointF, a: QPointF, b: QPointF):
         """Return the foot of perpendicular from proposed onto segment [a, b] if it
