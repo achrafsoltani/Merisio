@@ -638,6 +638,14 @@ class LinkItem(QGraphicsPathItem):
             self.update_position()
             self._notify_modified()
 
+    def clear_waypoints(self):
+        """Drop all waypoints, returning the link to auto-routing."""
+        if not self.link.waypoints:
+            return
+        self.link.waypoints.clear()
+        self.update_position()
+        self._notify_modified()
+
     def _notify_modified(self):
         scene = self.scene()
         if scene is None:
