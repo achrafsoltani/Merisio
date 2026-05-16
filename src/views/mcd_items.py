@@ -371,6 +371,23 @@ def _curve_control(a: QPointF, b: QPointF) -> QPointF:
     return QPointF(mid.x() + perp_x * curve_amount, mid.y() + perp_y * curve_amount)
 
 
+def _project_point_to_segment(p: QPointF, a: QPointF, b: QPointF):
+    """Foot of perpendicular from p onto segment [a, b]. Returns (foot, distance) or None
+    if the projection falls outside the segment endpoints — snapping/collapsing a waypoint
+    onto a remote extension of the line would change the path shape rather than tidy it."""
+    dx = b.x() - a.x()
+    dy = b.y() - a.y()
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return None
+    t = ((p.x() - a.x()) * dx + (p.y() - a.y()) * dy) / length_sq
+    if t < 0 or t > 1:
+        return None
+    foot = QPointF(a.x() + t * dx, a.y() + t * dy)
+    distance = math.hypot(p.x() - foot.x(), p.y() - foot.y())
+    return foot, distance
+
+
 class WaypointHandle(QGraphicsRectItem):
     """Solid square handle marking an existing waypoint on a link. Drag to move."""
 
@@ -390,14 +407,16 @@ class WaypointHandle(QGraphicsRectItem):
         self.setCursor(Qt.SizeAllCursor)
 
     def itemChange(self, change, value):
-        if (
-            change == QGraphicsItem.ItemPositionHasChanged
-            and not self.link_item._suspend_handle_updates
-        ):
-            wps = self.link_item.link.waypoints
-            if 0 <= self.waypoint_index < len(wps):
-                wps[self.waypoint_index] = [value.x(), value.y()]
-                self.link_item.update_position()
+        if not self.link_item._suspend_handle_updates:
+            if change == QGraphicsItem.ItemPositionChange:
+                snapped = self.link_item._snap_waypoint_position(self.waypoint_index, value)
+                if snapped is not None:
+                    return snapped
+            elif change == QGraphicsItem.ItemPositionHasChanged:
+                wps = self.link_item.link.waypoints
+                if 0 <= self.waypoint_index < len(wps):
+                    wps[self.waypoint_index] = [value.x(), value.y()]
+                    self.link_item.update_position()
         return super().itemChange(change, value)
 
     def mouseReleaseEvent(self, event):
@@ -427,19 +446,27 @@ class SegmentHandle(QGraphicsRectItem):
         self.setZValue(9)
         self.setCursor(Qt.SizeAllCursor)
         self._inserted = False
+        # Original segment endpoints, captured at construction so snap remains
+        # anchored to the pre-insertion segment line throughout the drag.
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in link_item.link.waypoints]
+        full = [link_item._p1, *waypoints_qpf, link_item._p2]
+        self._segment_start = QPointF(full[segment_index])
+        self._segment_end = QPointF(full[segment_index + 1])
 
     def itemChange(self, change, value):
-        if (
-            change == QGraphicsItem.ItemPositionHasChanged
-            and not self.link_item._suspend_handle_updates
-        ):
-            wps = self.link_item.link.waypoints
-            if not self._inserted:
-                wps.insert(self.segment_index, [value.x(), value.y()])
-                self._inserted = True
-            else:
-                wps[self.segment_index] = [value.x(), value.y()]
-            self.link_item.update_position()
+        if not self.link_item._suspend_handle_updates:
+            if change == QGraphicsItem.ItemPositionChange:
+                snapped = self.link_item._snap_to_line(value, self._segment_start, self._segment_end)
+                if snapped is not None:
+                    return snapped
+            elif change == QGraphicsItem.ItemPositionHasChanged:
+                wps = self.link_item.link.waypoints
+                if not self._inserted:
+                    wps.insert(self.segment_index, [value.x(), value.y()])
+                    self._inserted = True
+                else:
+                    wps[self.segment_index] = [value.x(), value.y()]
+                self.link_item.update_position()
         return super().itemChange(change, value)
 
     def mouseReleaseEvent(self, event):
@@ -457,6 +484,9 @@ class LinkItem(QGraphicsPathItem):
 
     # Class-level color (can be updated from project settings)
     line_color = LINK_COLOR
+
+    # Tight zone (scene units) for the magnetic drag-snap. Predictable during edit.
+    SNAP_THRESHOLD = 20.0
 
     def __init__(
         self,
@@ -645,6 +675,25 @@ class LinkItem(QGraphicsPathItem):
         self.link.waypoints.clear()
         self.update_position()
         self._notify_modified()
+
+    def _snap_to_line(self, proposed: QPointF, a: QPointF, b: QPointF):
+        """Return the foot of perpendicular from proposed onto segment [a, b] if it
+        lies within the segment AND the distance is under SNAP_THRESHOLD; else None."""
+        result = _project_point_to_segment(proposed, a, b)
+        if result is None:
+            return None
+        foot, distance = result
+        if distance < self.SNAP_THRESHOLD:
+            return foot
+        return None
+
+    def _snap_waypoint_position(self, index: int, proposed: QPointF):
+        """Snap a waypoint's proposed position onto the line through its neighbours."""
+        if not (0 <= index < len(self.link.waypoints)):
+            return None
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in self.link.waypoints]
+        full = [self._p1, *waypoints_qpf, self._p2]
+        return self._snap_to_line(proposed, full[index], full[index + 2])
 
     def _notify_modified(self):
         scene = self.scene()
