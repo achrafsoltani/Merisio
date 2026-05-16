@@ -104,12 +104,14 @@ class MCDCanvas(QGraphicsView):
         self._context_pos = self.mapToScene(pos)
         item = self.itemAt(pos)
 
-        # Right-click on a waypoint handle: remove this waypoint or wipe them all.
+        # Right-click on a waypoint handle: remove this waypoint, tidy, or wipe.
         if isinstance(item, WaypointHandle):
             menu = QMenu(self)
             remove = menu.addAction("Remove waypoint")
             remove.triggered.connect(item.remove)
             menu.addSeparator()
+            tidy = menu.addAction("Tidy Up Link")
+            tidy.triggered.connect(item.link_item.tidy_up_waypoints)
             straighten = menu.addAction("Straighten Link")
             straighten.triggered.connect(item.link_item.clear_waypoints)
             menu.exec(self.mapToGlobal(pos))
@@ -162,6 +164,8 @@ class MCDCanvas(QGraphicsView):
 
             if item.link.waypoints:
                 menu.addSeparator()
+                tidy_action = menu.addAction("Tidy Up Link")
+                tidy_action.triggered.connect(item.tidy_up_waypoints)
                 straighten_action = menu.addAction("Straighten Link")
                 straighten_action.triggered.connect(item.clear_waypoints)
 
@@ -177,6 +181,8 @@ class MCDCanvas(QGraphicsView):
 
                 if parent.link.waypoints:
                     menu.addSeparator()
+                    tidy_action = menu.addAction("Tidy Up Link")
+                    tidy_action.triggered.connect(parent.tidy_up_waypoints)
                     straighten_action = menu.addAction("Straighten Link")
                     straighten_action.triggered.connect(parent.clear_waypoints)
 

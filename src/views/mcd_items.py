@@ -487,6 +487,9 @@ class LinkItem(QGraphicsPathItem):
 
     # Tight zone (scene units) for the magnetic drag-snap. Predictable during edit.
     SNAP_THRESHOLD = 20.0
+    # Wider zone for the explicit "Tidy Up" action. Snap prevents new ugliness;
+    # tidy cleans up legacy waypoints the user wants gone, so it's more forgiving.
+    TIDY_THRESHOLD = 40.0
 
     def __init__(
         self,
@@ -675,6 +678,40 @@ class LinkItem(QGraphicsPathItem):
         self.link.waypoints.clear()
         self.update_position()
         self._notify_modified()
+
+    def tidy_up_waypoints(self):
+        """Remove waypoints near-collinear with their neighbours. Iterates until stable
+        so that removing one redundant waypoint can expose another (e.g. a chain of
+        nearly-straight bends collapses in two passes rather than leaving one behind)."""
+        if not self.link.waypoints:
+            return
+        changed = False
+        while self._collinear_pass():
+            changed = True
+        if changed:
+            self.update_position()
+            self._notify_modified()
+
+    def _collinear_pass(self) -> bool:
+        """Single pass: drop every waypoint whose perpendicular distance to the line
+        through its neighbours is below TIDY_THRESHOLD. Returns True if any
+        were dropped."""
+        waypoints = self.link.waypoints
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in waypoints]
+        full = [self._p1, *waypoints_qpf, self._p2]
+        redundant = []
+        for i, wp in enumerate(waypoints_qpf):
+            prev = full[i]
+            nxt = full[i + 2]
+            result = _project_point_to_segment(wp, prev, nxt)
+            if result is None:
+                continue
+            _, distance = result
+            if distance < self.TIDY_THRESHOLD:
+                redundant.append(i)
+        for i in reversed(redundant):
+            del waypoints[i]
+        return bool(redundant)
 
     def _snap_to_line(self, proposed: QPointF, a: QPointF, b: QPointF):
         """Return the foot of perpendicular from proposed onto segment [a, b] if it
