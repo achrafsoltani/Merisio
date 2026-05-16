@@ -371,6 +371,84 @@ def _curve_control(a: QPointF, b: QPointF) -> QPointF:
     return QPointF(mid.x() + perp_x * curve_amount, mid.y() + perp_y * curve_amount)
 
 
+class WaypointHandle(QGraphicsRectItem):
+    """Solid square handle marking an existing waypoint on a link. Drag to move."""
+
+    SIZE = 8
+
+    def __init__(self, link_item: "LinkItem", waypoint_index: int):
+        super().__init__(-self.SIZE / 2, -self.SIZE / 2, self.SIZE, self.SIZE, link_item)
+        self.link_item = link_item
+        self.waypoint_index = waypoint_index
+        self.setBrush(QBrush(QColor(SELECTED_COLOR)))
+        self.setPen(QPen(QColor("white"), 1))
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
+        # Constant pixel size regardless of zoom level
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        self.setZValue(10)
+        self.setCursor(Qt.SizeAllCursor)
+
+    def itemChange(self, change, value):
+        if (
+            change == QGraphicsItem.ItemPositionHasChanged
+            and not self.link_item._suspend_handle_updates
+        ):
+            wps = self.link_item.link.waypoints
+            if 0 <= self.waypoint_index < len(wps):
+                wps[self.waypoint_index] = [value.x(), value.y()]
+                self.link_item.update_position()
+        return super().itemChange(change, value)
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self.link_item._notify_modified()
+
+    def remove(self):
+        self.link_item._remove_waypoint(self.waypoint_index)
+
+
+class SegmentHandle(QGraphicsRectItem):
+    """Outlined square at a segment midpoint. Dragging inserts a new waypoint."""
+
+    SIZE = 6
+
+    def __init__(self, link_item: "LinkItem", segment_index: int):
+        super().__init__(-self.SIZE / 2, -self.SIZE / 2, self.SIZE, self.SIZE, link_item)
+        self.link_item = link_item
+        # Index in link.waypoints where a new waypoint will be inserted on drag.
+        self.segment_index = segment_index
+        self.setBrush(QBrush(QColor("white")))
+        self.setPen(QPen(QColor(SELECTED_COLOR), 1))
+        self.setOpacity(0.7)
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        self.setZValue(9)
+        self.setCursor(Qt.SizeAllCursor)
+        self._inserted = False
+
+    def itemChange(self, change, value):
+        if (
+            change == QGraphicsItem.ItemPositionHasChanged
+            and not self.link_item._suspend_handle_updates
+        ):
+            wps = self.link_item.link.waypoints
+            if not self._inserted:
+                wps.insert(self.segment_index, [value.x(), value.y()])
+                self._inserted = True
+            else:
+                wps[self.segment_index] = [value.x(), value.y()]
+            self.link_item.update_position()
+        return super().itemChange(change, value)
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        if self._inserted:
+            self.link_item._rebuild_handles()
+            self.link_item._notify_modified()
+
+
 class LinkItem(QGraphicsPathItem):
     """Graphical representation of a link between entity and association."""
 
