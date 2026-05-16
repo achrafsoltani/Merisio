@@ -603,10 +603,29 @@ class LinkItem(QGraphicsPathItem):
                 path.lineTo(b)
 
         else:  # "curved"
-            centroid = self._compute_centroid()
-            for i in range(len(points) - 1):
-                a, b = points[i], points[i + 1]
-                path.quadTo(_curve_control(a, b, centroid), b)
+            if len(points) == 2:
+                # Single segment: perpendicular-offset quadratic Bezier so even
+                # straight links look curved. Direction biased by centroid.
+                a, b = points[0], points[1]
+                path.quadTo(_curve_control(a, b, self._compute_centroid()), b)
+            else:
+                # Multi-segment: Catmull-Rom → cubic Bezier per segment. Tangent
+                # at each interior point is half the chord through its neighbours,
+                # so consecutive segments meet smoothly with no kink. Endpoints
+                # clamp to the segment direction (p0=a, p3=b at the boundaries).
+                for i in range(len(points) - 1):
+                    a, b = points[i], points[i + 1]
+                    p0 = points[i - 1] if i > 0 else a
+                    p3 = points[i + 2] if i + 2 < len(points) else b
+                    c1 = QPointF(
+                        a.x() + (b.x() - p0.x()) / 6,
+                        a.y() + (b.y() - p0.y()) / 6,
+                    )
+                    c2 = QPointF(
+                        b.x() - (p3.x() - a.x()) / 6,
+                        b.y() - (p3.y() - a.y()) / 6,
+                    )
+                    path.cubicTo(c1, c2, b)
 
         self.setPath(path)
 
