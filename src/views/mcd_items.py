@@ -492,6 +492,12 @@ class LinkItem(QGraphicsPathItem):
         self._p2 = QPointF()
         self._control = QPointF()
 
+        # Draggable handles, created lazily on selection.
+        self._handles: list = []
+        # Flag set while we reposition handles programmatically, so the
+        # handles' itemChange doesn't loop back into update_position.
+        self._suspend_handle_updates = False
+
         # Register with connected items
         entity_item.add_link(self)
         association_item.add_link(self)
@@ -577,6 +583,70 @@ class LinkItem(QGraphicsPathItem):
             label_x - text_rect.width() / 2,
             label_y - text_rect.height() / 2
         )
+
+        self._refresh_handles()
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            if self.isSelected():
+                self._rebuild_handles()
+            else:
+                self._clear_handles()
+        return super().itemChange(change, value)
+
+    def _refresh_handles(self):
+        """Rebuild handles if the link is selected and no handle is mid-drag."""
+        if not self.isSelected():
+            return
+        scene = self.scene()
+        if scene is not None:
+            grabber = scene.mouseGrabberItem()
+            if isinstance(grabber, (WaypointHandle, SegmentHandle)) and grabber.parentItem() is self:
+                return
+        self._rebuild_handles()
+
+    def _rebuild_handles(self):
+        self._suspend_handle_updates = True
+        try:
+            self._clear_handles()
+            waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in self.link.waypoints]
+            points = [self._p1, *waypoints_qpf, self._p2]
+
+            for i, wp in enumerate(waypoints_qpf):
+                handle = WaypointHandle(self, i)
+                handle.setPos(wp)
+                self._handles.append(handle)
+
+            for i in range(len(points) - 1):
+                a, b = points[i], points[i + 1]
+                handle = SegmentHandle(self, i)
+                handle.setPos(QPointF((a.x() + b.x()) / 2, (a.y() + b.y()) / 2))
+                self._handles.append(handle)
+        finally:
+            self._suspend_handle_updates = False
+
+    def _clear_handles(self):
+        scene = self.scene()
+        for handle in self._handles:
+            if scene is not None and handle.scene() is scene:
+                scene.removeItem(handle)
+        self._handles = []
+
+    def _remove_waypoint(self, index: int):
+        if 0 <= index < len(self.link.waypoints):
+            del self.link.waypoints[index]
+            self.update_position()
+            self._notify_modified()
+
+    def _notify_modified(self):
+        scene = self.scene()
+        if scene is None:
+            return
+        for view in scene.views():
+            sig = getattr(view, "modified", None)
+            if sig is not None:
+                sig.emit()
+                return
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         if self.isSelected():
