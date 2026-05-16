@@ -143,6 +143,17 @@ class TestLink:
         }
         link = Link.from_dict(data)
         assert link.waypoints == []
+        # Same files also lack card_t — must fall back to 0.2.
+        assert link.card_t == 0.2
+
+    def test_card_t_round_trip(self):
+        link = Link(entity_id="e1", association_id="a1", card_t=0.65)
+        restored = Link.from_dict(link.to_dict())
+        assert restored.card_t == 0.65
+
+    def test_default_card_t_is_0_2(self):
+        link = Link(entity_id="e1", association_id="a1")
+        assert link.card_t == 0.2
 
 
 class TestDictionary:

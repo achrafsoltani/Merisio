@@ -494,6 +494,36 @@ class SegmentHandle(QGraphicsRectItem):
             self.link_item._notify_modified()
 
 
+class CardinalityLabel(QGraphicsRectItem):
+    """The "1,N" / "0,1" cardinality box. Draggable along the link's path; the
+    cursor's projected position on the polyline replaces its raw drag position
+    so the box can never leave the link."""
+
+    def __init__(self, link_item: "LinkItem"):
+        super().__init__(link_item)
+        self.link_item = link_item
+        self.setBrush(QBrush(QColor("white")))
+        self.setPen(QPen(QColor(LinkItem.line_color), 1))
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
+        self.setCursor(Qt.SizeAllCursor)
+
+    def itemChange(self, change, value):
+        if (
+            change == QGraphicsItem.ItemPositionChange
+            and not self.link_item._suspend_label_update
+        ):
+            point, t = self.link_item._project_to_path(value)
+            self.link_item.link.card_t = max(0.0, min(1.0, t))
+            return point
+        return super().itemChange(change, value)
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton:
+            self.link_item._notify_modified()
+
+
 class LinkItem(QGraphicsPathItem):
     """Graphical representation of a link between entity and association."""
 
@@ -525,29 +555,31 @@ class LinkItem(QGraphicsPathItem):
         self.setPen(QPen(QColor(LinkItem.line_color), 1))
         self.setBrush(Qt.NoBrush)
 
-        # Create background for cardinality label (white box)
-        self._card_bg = QGraphicsRectItem(self)
-        self._card_bg.setBrush(QBrush(QColor("white")))
-        self._card_bg.setPen(QPen(QColor(LinkItem.line_color), 1))
+        # Cardinality label box — draggable along the path.
+        self._card_bg = CardinalityLabel(self)
 
-        # Create cardinality label
-        self._card_label = QGraphicsTextItem(self)
+        # Label text is a child of the bg so it travels with it on drag.
+        # NoButton lets press events fall through to the bg rect underneath.
+        self._card_label = QGraphicsTextItem(self._card_bg)
+        self._card_label.setAcceptedMouseButtons(Qt.NoButton)
         font = QFont()
         font.setBold(True)
         font.setPointSize(9)
         self._card_label.setFont(font)
         self._card_label.setDefaultTextColor(QColor("black"))
 
-        # Store points for curve calculation
+        # Anchored endpoints (recomputed every update_position).
         self._p1 = QPointF()
         self._p2 = QPointF()
-        self._control = QPointF()
 
         # Draggable handles, created lazily on selection.
         self._handles: list = []
         # Flag set while we reposition handles programmatically, so the
         # handles' itemChange doesn't loop back into update_position.
         self._suspend_handle_updates = False
+        # Same idea for the cardinality label: update_position sets its pos
+        # from the model's card_t and we don't want that write to bounce back.
+        self._suspend_label_update = False
 
         # Register with connected items
         entity_item.add_link(self)
@@ -629,24 +661,8 @@ class LinkItem(QGraphicsPathItem):
 
         self.setPath(path)
 
-        # Cardinality label sits 20% along the first segment, near the entity.
-        seg_a, seg_b = points[0], points[1]
-        if LinkItem.link_style == "curved":
-            self._control = _curve_control(seg_a, seg_b, self._compute_centroid())
-        else:
-            self._control = QPointF(
-                (self._p1.x() + self._p2.x()) / 2,
-                (self._p1.y() + self._p2.y()) / 2,
-            )
-
-        t = 0.2
-        if LinkItem.link_style == "curved":
-            label_x = (1-t)*(1-t)*seg_a.x() + 2*(1-t)*t*self._control.x() + t*t*seg_b.x()
-            label_y = (1-t)*(1-t)*seg_a.y() + 2*(1-t)*t*self._control.y() + t*t*seg_b.y()
-        else:
-            label_x = seg_a.x() + t * (seg_b.x() - seg_a.x())
-            label_y = seg_a.y() + t * (seg_b.y() - seg_a.y())
-
+        # Cardinality label anchored along the polyline at the model's card_t.
+        anchor = self._point_at_t(self.link.card_t)
         card_text = f"{self.link.cardinality_min},{self.link.cardinality_max}"
         self._card_label.setPlainText(card_text)
 
@@ -654,16 +670,15 @@ class LinkItem(QGraphicsPathItem):
         padding = 3
         bg_width = text_rect.width() + padding * 2
         bg_height = text_rect.height()
-        self._card_bg.setRect(
-            label_x - bg_width / 2,
-            label_y - bg_height / 2,
-            bg_width,
-            bg_height
-        )
-        self._card_label.setPos(
-            label_x - text_rect.width() / 2,
-            label_y - text_rect.height() / 2
-        )
+        self._suspend_label_update = True
+        try:
+            # Bg's scene origin sits on the path; its rect and the child label
+            # are positioned in bg-local coordinates centred on that origin.
+            self._card_bg.setPos(anchor)
+            self._card_bg.setRect(-bg_width / 2, -bg_height / 2, bg_width, bg_height)
+            self._card_label.setPos(-text_rect.width() / 2, -text_rect.height() / 2)
+        finally:
+            self._suspend_label_update = False
 
         self._refresh_handles()
 
@@ -760,6 +775,63 @@ class LinkItem(QGraphicsPathItem):
         for i in reversed(redundant):
             del waypoints[i]
         return bool(redundant)
+
+    def _point_at_t(self, t: float) -> QPointF:
+        """Position on the polyline [p1, *waypoints, p2] at fractional length t."""
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in self.link.waypoints]
+        points = [self._p1, *waypoints_qpf, self._p2]
+        seg_lens = [
+            math.hypot(points[i + 1].x() - points[i].x(), points[i + 1].y() - points[i].y())
+            for i in range(len(points) - 1)
+        ]
+        total = sum(seg_lens)
+        if total == 0:
+            return QPointF(points[0])
+        target = max(0.0, min(1.0, t)) * total
+        accumulated = 0.0
+        for i, seg_len in enumerate(seg_lens):
+            if accumulated + seg_len >= target:
+                seg_t = (target - accumulated) / seg_len if seg_len > 0 else 0.0
+                a, b = points[i], points[i + 1]
+                return QPointF(a.x() + seg_t * (b.x() - a.x()), a.y() + seg_t * (b.y() - a.y()))
+            accumulated += seg_len
+        return QPointF(points[-1])
+
+    def _project_to_path(self, target: QPointF):
+        """Returns (closest_point_on_path, t_along_path) for a free-floating target."""
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in self.link.waypoints]
+        points = [self._p1, *waypoints_qpf, self._p2]
+        seg_lens = [
+            math.hypot(points[i + 1].x() - points[i].x(), points[i + 1].y() - points[i].y())
+            for i in range(len(points) - 1)
+        ]
+        total = sum(seg_lens)
+        if total == 0:
+            return QPointF(points[0]), 0.0
+        best_dist = float("inf")
+        best_point = points[0]
+        best_t = 0.0
+        accumulated = 0.0
+        for i in range(len(points) - 1):
+            a, b = points[i], points[i + 1]
+            dx = b.x() - a.x()
+            dy = b.y() - a.y()
+            seg_sq = dx * dx + dy * dy
+            if seg_sq == 0:
+                foot = a
+                seg_t = 0.0
+            else:
+                u = ((target.x() - a.x()) * dx + (target.y() - a.y()) * dy) / seg_sq
+                u = max(0.0, min(1.0, u))
+                foot = QPointF(a.x() + u * dx, a.y() + u * dy)
+                seg_t = u
+            dist = math.hypot(target.x() - foot.x(), target.y() - foot.y())
+            if dist < best_dist:
+                best_dist = dist
+                best_point = foot
+                best_t = (accumulated + seg_t * seg_lens[i]) / total
+            accumulated += seg_lens[i]
+        return best_point, best_t
 
     def _compute_centroid(self):
         """Average position of every entity and association in the scene.
