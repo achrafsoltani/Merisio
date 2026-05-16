@@ -357,6 +357,20 @@ class AssociationItem(QGraphicsItem):
             link_item.update_position()
 
 
+def _curve_control(a: QPointF, b: QPointF) -> QPointF:
+    """Quadratic Bezier control point with a capped perpendicular offset."""
+    dx = b.x() - a.x()
+    dy = b.y() - a.y()
+    length = math.sqrt(dx * dx + dy * dy)
+    mid = QPointF((a.x() + b.x()) / 2, (a.y() + b.y()) / 2)
+    if length == 0:
+        return mid
+    perp_x = -dy / length
+    perp_y = dx / length
+    curve_amount = min(length * 0.15, 30)
+    return QPointF(mid.x() + perp_x * curve_amount, mid.y() + perp_y * curve_amount)
+
+
 class LinkItem(QGraphicsPathItem):
     """Graphical representation of a link between entity and association."""
 
@@ -407,87 +421,72 @@ class LinkItem(QGraphicsPathItem):
         self.update_position()
 
     def update_position(self):
-        """Update link position based on connected items and current style."""
-        # Get centers first to calculate direction
+        """Update link path from connected items, stored waypoints, and current style."""
+        waypoints_qpf = [QPointF(wp[0], wp[1]) for wp in self.link.waypoints]
         entity_center = self.entity_item.get_center()
         assoc_center = self.association_item.get_center()
 
-        # Get edge points (where line meets the shape borders)
-        self._p1 = self.entity_item.get_edge_point(assoc_center)
-        self._p2 = self.association_item.get_edge_point(entity_center)
+        # Anchor each endpoint toward its closest neighbour (first/last waypoint
+        # if any, else the opposite shape's centre — the auto-routing default).
+        p1_target = waypoints_qpf[0] if waypoints_qpf else assoc_center
+        p2_target = waypoints_qpf[-1] if waypoints_qpf else entity_center
+        self._p1 = self.entity_item.get_edge_point(p1_target)
+        self._p2 = self.association_item.get_edge_point(p2_target)
 
-        # Calculate midpoint
-        mid_x = (self._p1.x() + self._p2.x()) / 2
-        mid_y = (self._p1.y() + self._p2.y()) / 2
+        points = [self._p1, *waypoints_qpf, self._p2]
 
-        # Create path based on style
         path = QPainterPath()
-        path.moveTo(self._p1)
+        path.moveTo(points[0])
 
         if LinkItem.link_style == "straight":
-            # Simple straight line
-            path.lineTo(self._p2)
-            self._control = QPointF(mid_x, mid_y)
+            for pt in points[1:]:
+                path.lineTo(pt)
 
         elif LinkItem.link_style == "orthogonal":
-            # Orthogonal (right-angle) path
-            # Determine if horizontal or vertical first based on angle
-            dx = self._p2.x() - self._p1.x()
-            dy = self._p2.y() - self._p1.y()
+            for i in range(len(points) - 1):
+                a, b = points[i], points[i + 1]
+                dx = b.x() - a.x()
+                dy = b.y() - a.y()
+                mid_x = (a.x() + b.x()) / 2
+                mid_y = (a.y() + b.y()) / 2
+                if abs(dx) > abs(dy):
+                    path.lineTo(QPointF(mid_x, a.y()))
+                    path.lineTo(QPointF(mid_x, b.y()))
+                else:
+                    path.lineTo(QPointF(a.x(), mid_y))
+                    path.lineTo(QPointF(b.x(), mid_y))
+                path.lineTo(b)
 
-            if abs(dx) > abs(dy):
-                # Go horizontal first, then vertical
-                mid_point = QPointF(mid_x, self._p1.y())
-                path.lineTo(mid_point)
-                path.lineTo(QPointF(mid_x, self._p2.y()))
-                path.lineTo(self._p2)
-            else:
-                # Go vertical first, then horizontal
-                mid_point = QPointF(self._p1.x(), mid_y)
-                path.lineTo(mid_point)
-                path.lineTo(QPointF(self._p2.x(), mid_y))
-                path.lineTo(self._p2)
-            self._control = QPointF(mid_x, mid_y)
-
-        else:  # "curved" (default)
-            # Quadratic Bezier curve
-            dx = self._p2.x() - self._p1.x()
-            dy = self._p2.y() - self._p1.y()
-            length = math.sqrt(dx * dx + dy * dy)
-
-            if length > 0:
-                # Perpendicular vector (normalized)
-                perp_x = -dy / length
-                perp_y = dx / length
-                # Curve amount (proportional to distance, but capped)
-                curve_amount = min(length * 0.15, 30)
-                self._control = QPointF(mid_x + perp_x * curve_amount, mid_y + perp_y * curve_amount)
-            else:
-                self._control = QPointF(mid_x, mid_y)
-
-            path.quadTo(self._control, self._p2)
+        else:  # "curved"
+            for i in range(len(points) - 1):
+                a, b = points[i], points[i + 1]
+                path.quadTo(_curve_control(a, b), b)
 
         self.setPath(path)
 
-        # Position cardinality label near entity edge
-        # For curved: use point on Bezier at t=0.2
-        # For others: use point 20% along the path
+        # Cardinality label sits 20% along the first segment, near the entity.
+        seg_a, seg_b = points[0], points[1]
+        if LinkItem.link_style == "curved":
+            self._control = _curve_control(seg_a, seg_b)
+        else:
+            self._control = QPointF(
+                (self._p1.x() + self._p2.x()) / 2,
+                (self._p1.y() + self._p2.y()) / 2,
+            )
+
         t = 0.2
         if LinkItem.link_style == "curved":
-            label_x = (1-t)*(1-t)*self._p1.x() + 2*(1-t)*t*self._control.x() + t*t*self._p2.x()
-            label_y = (1-t)*(1-t)*self._p1.y() + 2*(1-t)*t*self._control.y() + t*t*self._p2.y()
+            label_x = (1-t)*(1-t)*seg_a.x() + 2*(1-t)*t*self._control.x() + t*t*seg_b.x()
+            label_y = (1-t)*(1-t)*seg_a.y() + 2*(1-t)*t*self._control.y() + t*t*seg_b.y()
         else:
-            label_x = self._p1.x() + t * (self._p2.x() - self._p1.x())
-            label_y = self._p1.y() + t * (self._p2.y() - self._p1.y())
+            label_x = seg_a.x() + t * (seg_b.x() - seg_a.x())
+            label_y = seg_a.y() + t * (seg_b.y() - seg_a.y())
 
         card_text = f"{self.link.cardinality_min},{self.link.cardinality_max}"
         self._card_label.setPlainText(card_text)
 
-        # Get text bounding rect for background sizing
         text_rect = self._card_label.boundingRect()
         padding = 3
-
-        # Position the background rectangle
         bg_width = text_rect.width() + padding * 2
         bg_height = text_rect.height()
         self._card_bg.setRect(
@@ -496,8 +495,6 @@ class LinkItem(QGraphicsPathItem):
             bg_width,
             bg_height
         )
-
-        # Position the text centered on the background
         self._card_label.setPos(
             label_x - text_rect.width() / 2,
             label_y - text_rect.height() / 2
