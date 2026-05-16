@@ -578,18 +578,28 @@ class LinkItem(QGraphicsPathItem):
                 path.lineTo(pt)
 
         elif LinkItem.link_style == "orthogonal":
+            # No waypoints: a single Z (two corners in the middle of the segment) looks
+            # balanced. With waypoints: an L per segment (one corner each) produces a
+            # cleaner staircase — a Z per segment piles on too many right angles.
+            single_segment = len(points) == 2
             for i in range(len(points) - 1):
                 a, b = points[i], points[i + 1]
                 dx = b.x() - a.x()
                 dy = b.y() - a.y()
-                mid_x = (a.x() + b.x()) / 2
-                mid_y = (a.y() + b.y()) / 2
-                if abs(dx) > abs(dy):
-                    path.lineTo(QPointF(mid_x, a.y()))
-                    path.lineTo(QPointF(mid_x, b.y()))
+                if single_segment:
+                    mid_x = (a.x() + b.x()) / 2
+                    mid_y = (a.y() + b.y()) / 2
+                    if abs(dx) > abs(dy):
+                        path.lineTo(QPointF(mid_x, a.y()))
+                        path.lineTo(QPointF(mid_x, b.y()))
+                    else:
+                        path.lineTo(QPointF(a.x(), mid_y))
+                        path.lineTo(QPointF(b.x(), mid_y))
                 else:
-                    path.lineTo(QPointF(a.x(), mid_y))
-                    path.lineTo(QPointF(b.x(), mid_y))
+                    if abs(dx) > abs(dy):
+                        path.lineTo(QPointF(b.x(), a.y()))
+                    else:
+                        path.lineTo(QPointF(a.x(), b.y()))
                 path.lineTo(b)
 
         else:  # "curved"
