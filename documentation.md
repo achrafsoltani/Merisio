@@ -164,9 +164,35 @@ Visual canvas for creating MERISE Conceptual Data Models:
 - Orthogonal (right-angle lines)
 - Straight (direct lines)
 
+Curved links bend *away* from the diagram's visual centroid so each curve bows outward — never inward through another item. Curves through multiple waypoints use a Catmull-Rom cubic Bezier spline so the path stays smooth (C¹ continuous) at every waypoint, with no kink at the joins. Orthogonal multi-waypoint paths use one-corner-per-segment (L-shape) routing for a clean staircase.
+
 **Diagram Colours:**
 - Customisable via Options > Diagram Colours
 - Colours saved per-project in the `.merisio` file
+
+### Editing Relation Links
+
+Each relation link is fully editable — its shape, the position of its cardinality label, and which path style it uses.
+
+**Reshaping the path with waypoints.** Click any link to select it; the canvas reveals two kinds of handles along its path:
+
+| Handle | Look | Action |
+|---|---|---|
+| **Waypoint handle** | Solid 8 px blue square at an existing waypoint | Drag to move the bend point. Right-click for menu (see below). |
+| **Segment handle** | Outlined 6 px square at the midpoint of each segment | Drag to insert a new waypoint at that point and continue the drag. |
+
+Handles stay at a constant on-screen pixel size regardless of zoom level so they remain usable at any scale. They appear only while the link is selected.
+
+**Magnetic snap during drag.** While dragging a waypoint or a segment handle, if the proposed position is within 20 scene units of the line through its neighbours AND that projection lies inside the segment, the cursor sticks to the line. Pull harder than 20 units perpendicular to break free. This prevents tiny accidental bends and helps align waypoints cleanly.
+
+**Right-click menu on a waypoint:**
+- **Remove waypoint** - delete just this bend point
+- **Tidy Up Link** - remove every waypoint whose perpendicular distance to the line through its neighbours is below 40 scene units. Iterates until stable, so a chain of barely-bent waypoints collapses fully. Use this to clean up "ugly accumulated midpoints" without losing meaningful bends.
+- **Straighten Link** - remove all waypoints at once; the link reverts to its auto-routed shape.
+
+The same Tidy Up / Straighten entries appear on the link's own right-click menu (only when waypoints exist).
+
+**Moving the cardinality label.** Grab the "1,N" / "0,1" box and drag — it slides along the link's path, constrained so it never leaves the line. The position is stored as a fractional distance `card_t` (0 at the entity edge, 1 at the association edge) in the `.merisio` file, so it survives save/reload and tracks the link if entities are repositioned.
 
 ### Cardinalities
 

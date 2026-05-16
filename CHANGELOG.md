@@ -5,6 +5,21 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — v1.6.0
+
+### Added
+- Draggable link geometry — select a link to reveal waypoint handles (drag to move a bend) and segment-midpoint handles (drag to insert a new waypoint). Constant on-screen pixel size at any zoom.
+- Magnetic snap during waypoint drag — within 20 scene units of the line through its neighbours, the cursor sticks to that line.
+- Right-click waypoint menu — "Remove waypoint", "Tidy Up Link" (collapse waypoints within 40 units of their neighbour line, iterates until stable), "Straighten Link" (wipe all waypoints).
+- Conditional "Tidy Up Link" and "Straighten Link" entries on the link's own right-click menu (shown only when waypoints exist).
+- Draggable cardinality label — the "1,N" / "0,1" box slides along the link's path; the position is stored as `card_t` in the `.merisio` file and survives save/reload.
+
+### Changed
+- Curved single-segment links now bend *away* from the diagram's visual centroid, so mirrored links never bow inward through other items.
+- Curved multi-waypoint links use a Catmull-Rom cubic Bezier spline (C¹-continuous at every waypoint) instead of per-segment quadratic Bezier — no kink at joins, clean re-routing when a waypoint is removed.
+- Orthogonal multi-waypoint links use one-corner-per-segment (L-shape) routing instead of two-corner Z-routing, producing a clean staircase. Single-segment orthogonal links keep the centred Z corner.
+- File format bumped to **v2.2**: `Link` now carries `waypoints: list[list[float]]` (absolute scene coordinates) and `card_t: float` (label position along the path). Both fields default such that v2.1 files load unchanged.
+
 ## [1.5.0] - 2026-03-25
 
 ### Added
