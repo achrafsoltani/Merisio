@@ -11,7 +11,7 @@ from ..models.project import Project
 from ..models.entity import Entity
 from ..models.association import Association
 from ..models.link import Link
-from .mcd_items import EntityItem, AssociationItem, LinkItem
+from .mcd_items import EntityItem, AssociationItem, LinkItem, WaypointHandle, SegmentHandle
 
 
 class MCDCanvas(QGraphicsView):
@@ -103,6 +103,18 @@ class MCDCanvas(QGraphicsView):
         """Show context menu at the given position."""
         self._context_pos = self.mapToScene(pos)
         item = self.itemAt(pos)
+
+        # Right-click on a waypoint handle: "Remove waypoint" only.
+        if isinstance(item, WaypointHandle):
+            menu = QMenu(self)
+            remove = menu.addAction("Remove waypoint")
+            remove.triggered.connect(item.remove)
+            menu.exec(self.mapToGlobal(pos))
+            return
+
+        # Right-click on a segment-midpoint handle: fall through to the link's menu.
+        if isinstance(item, SegmentHandle):
+            item = item.parentItem()
 
         menu = QMenu(self)
 
