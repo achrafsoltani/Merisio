@@ -20,8 +20,10 @@ confinement: strict
 base: core24
 icon: resources/icons/app_icon.png
 
-architectures:
-  - build-on: [amd64]
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
 
 apps:
   merisio:

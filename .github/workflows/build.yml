@@ -167,7 +167,10 @@ jobs:
           path: ${{ steps.snapcraft.outputs.snap }}
 
   release:
-    needs: [version, build-linux, build-windows, build-snap]
+    # Snap is intentionally NOT in `needs` — a snap-build failure should not
+    # block the GitHub Release of Linux + Windows artifacts. The snap is then
+    # uploaded as a best-effort extra below.
+    needs: [version, build-linux, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -183,8 +186,9 @@ jobs:
         with:
           name: merisio-windows
 
-      - name: Download Snap artifact
+      - name: Download Snap artifact (best effort)
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: merisio-snap
 
@@ -196,6 +200,7 @@ jobs:
             merisio_${{ needs.version.outputs.app_version }}_amd64.deb
             Merisio-windows-x64.zip
             *.snap
+          fail_on_unmatched_files: false
           generate_release_notes: true
 
   publish-snap:
