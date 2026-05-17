@@ -12,6 +12,7 @@ from ..models.project import Project
 from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER, MSD_FILE_FILTER
 from ..utils.file_io import FileIO
 from ..controllers.mcd_controller import MCDController
+from ..controllers.project_history import ProjectHistory
 from .mcd_canvas import MCDCanvas
 from .mld_view import MLDView
 from .output_panel import OutputPanel
@@ -26,13 +27,19 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._project = Project()
+        self._project_history = ProjectHistory()
+        # Flag set while restoring a snapshot, so the canvas's modified signal
+        # doesn't push a fresh snapshot mid-restore (which would clear redo).
+        self._restoring_snapshot = False
         self._setup_ui()
         self._setup_menus()
         self._setup_toolbar()
         self._connect_signals()
         self._mcd_canvas.apply_colors(self._project.colors)
         self._tabs.setCurrentIndex(0)  # Start on MCD tab
+        self._project_history.init(self._project)
         self._update_title()
+        self._update_undo_redo_actions()
 
     def _setup_ui(self):
         """Set up the main UI layout with sidebar + central tabs + bottom panel."""
@@ -265,6 +272,18 @@ class MainWindow(QMainWindow):
 
         # Edit menu
         edit_menu = menubar.addMenu("&Edit")
+
+        self._undo_action = QAction("&Undo", self)
+        self._undo_action.setShortcut(QKeySequence.Undo)
+        self._undo_action.triggered.connect(self._on_undo)
+        edit_menu.addAction(self._undo_action)
+
+        self._redo_action = QAction("&Redo", self)
+        self._redo_action.setShortcut(QKeySequence.Redo)
+        self._redo_action.triggered.connect(self._on_redo)
+        edit_menu.addAction(self._redo_action)
+
+        edit_menu.addSeparator()
 
         delete_action = QAction("&Delete Selected", self)
         delete_action.setShortcut(QKeySequence.Delete)
@@ -518,6 +537,40 @@ class MainWindow(QMainWindow):
         self._output_panel.refresh_dictionary()
         self._project_tree.refresh()
         self._minimap.refresh()
+        if not self._restoring_snapshot:
+            self._project_history.push(self._project)
+            self._update_undo_redo_actions()
+
+    def _on_undo(self):
+        snapshot = self._project_history.undo()
+        if snapshot is None:
+            return
+        self._apply_snapshot(snapshot)
+        self.statusBar().showMessage("Undo", 2000)
+
+    def _on_redo(self):
+        snapshot = self._project_history.redo()
+        if snapshot is None:
+            return
+        self._apply_snapshot(snapshot)
+        self.statusBar().showMessage("Redo", 2000)
+
+    def _apply_snapshot(self, snapshot: dict):
+        """Rebuild the project from a history snapshot. Suspends history push
+        so the resulting modified emission doesn't loop back into a new push."""
+        restored = Project.from_dict(snapshot)
+        restored.file_path = self._project.file_path
+        restored.modified = True  # Conservative: any undo/redo counts as unsaved.
+        self._restoring_snapshot = True
+        try:
+            self._set_project(restored)
+        finally:
+            self._restoring_snapshot = False
+        self._update_undo_redo_actions()
+
+    def _update_undo_redo_actions(self):
+        self._undo_action.setEnabled(self._project_history.can_undo())
+        self._redo_action.setEnabled(self._project_history.can_redo())
 
     def _on_tab_changed(self, index: int):
         if index == 1:  # MLD tab
@@ -534,6 +587,12 @@ class MainWindow(QMainWindow):
         self._properties_panel.set_project(project)
         self._minimap.refresh()
         self._update_title()
+        # On a fresh load (new file / open file), re-seed history so the user
+        # can't undo back into the previous session. When restoring a snapshot
+        # we leave the existing history intact.
+        if not self._restoring_snapshot:
+            self._project_history.init(project)
+            self._update_undo_redo_actions()
 
     def _check_save(self) -> bool:
         if not self._project.modified:
