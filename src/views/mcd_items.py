@@ -450,6 +450,10 @@ class SegmentHandle(QGraphicsRectItem):
 
     SIZE = 6
 
+    # Aspect ratio above which a segment counts as axis-aligned for orthogonal
+    # mode axis-lock: |dx| > AXIS_LOCK_RATIO * |dy| → horizontal, vice versa.
+    AXIS_LOCK_RATIO = 3.0
+
     def __init__(self, link_item: "LinkItem", segment_index: int):
         super().__init__(-self.SIZE / 2, -self.SIZE / 2, self.SIZE, self.SIZE, link_item)
         self.link_item = link_item
@@ -470,13 +474,38 @@ class SegmentHandle(QGraphicsRectItem):
         full = [link_item._p1, *waypoints_qpf, link_item._p2]
         self._segment_start = QPointF(full[segment_index])
         self._segment_end = QPointF(full[segment_index + 1])
+        # Axis-lock pre-computation for orthogonal mode: if the segment is
+        # clearly horizontal or vertical, the cursor's perpendicular axis is
+        # locked to the segment midpoint so the inserted waypoint produces a
+        # clean rectangular detour rather than a diagonal one.
+        seg_dx = abs(self._segment_end.x() - self._segment_start.x())
+        seg_dy = abs(self._segment_end.y() - self._segment_start.y())
+        mid_x = (self._segment_start.x() + self._segment_end.x()) / 2
+        mid_y = (self._segment_start.y() + self._segment_end.y()) / 2
+        if seg_dx > self.AXIS_LOCK_RATIO * seg_dy:
+            self._lock_axis = "x"
+            self._lock_value = mid_x
+        elif seg_dy > self.AXIS_LOCK_RATIO * seg_dx:
+            self._lock_axis = "y"
+            self._lock_value = mid_y
+        else:
+            self._lock_axis = None
+            self._lock_value = 0.0
 
     def itemChange(self, change, value):
         if not self.link_item._suspend_handle_updates:
             if change == QGraphicsItem.ItemPositionChange:
+                if LinkItem.link_style == "orthogonal" and self._lock_axis is not None:
+                    # Lock the cursor's axis-aligned coordinate to the segment midpoint;
+                    # only the perpendicular direction is free.
+                    if self._lock_axis == "x":
+                        value = QPointF(self._lock_value, value.y())
+                    else:
+                        value = QPointF(value.x(), self._lock_value)
                 snapped = self.link_item._snap_to_line(value, self._segment_start, self._segment_end)
                 if snapped is not None:
                     return snapped
+                return value
             elif change == QGraphicsItem.ItemPositionHasChanged:
                 wps = self.link_item.link.waypoints
                 if not self._inserted:
