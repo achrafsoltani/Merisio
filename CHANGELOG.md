@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Draggable link geometry — select a link to reveal waypoint handles (drag to move a bend) and segment-midpoint handles (drag to insert a new waypoint). Constant on-screen pixel size at any zoom.
 - Magnetic snap during waypoint drag — within 20 scene units of the line through its neighbours, the cursor sticks to that line.
+- Orthogonal segment-axis-lock — when the dragged segment is clearly horizontal or vertical (≥3:1 aspect) on an orthogonal-style link, the cursor's non-perpendicular axis locks to the segment midpoint so the inserted waypoint produces a clean rectangular detour.
 - Right-click waypoint menu — "Remove waypoint", "Tidy Up Link" (collapse waypoints within 40 units of their neighbour line, iterates until stable), "Straighten Link" (wipe all waypoints).
 - Conditional "Tidy Up Link" and "Straighten Link" entries on the link's own right-click menu (shown only when waypoints exist).
 - Draggable cardinality label — the "1,N" / "0,1" box slides along the link's path; the position is stored as `card_t` in the `.merisio` file and survives save/reload.
+- Wider link hit-area (8 scene units around the visible 1 px stroke) so thin links are easy to click without changing their appearance.
 
 ### Changed
 - Curved single-segment links now bend *away* from the diagram's visual centroid, so mirrored links never bow inward through other items.

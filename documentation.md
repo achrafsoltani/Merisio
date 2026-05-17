@@ -185,6 +185,8 @@ Handles stay at a constant on-screen pixel size regardless of zoom level so they
 
 **Magnetic snap during drag.** While dragging a waypoint or a segment handle, if the proposed position is within 20 scene units of the line through its neighbours AND that projection lies inside the segment, the cursor sticks to the line. Pull harder than 20 units perpendicular to break free. This prevents tiny accidental bends and helps align waypoints cleanly.
 
+**Orthogonal axis-lock.** On an orthogonal-style link, dragging a segment handle whose underlying segment is clearly horizontal or vertical locks the cursor's non-perpendicular axis to the segment midpoint. So pulling down on a horizontal segment moves the cursor in Y only, producing a clean rectangular detour rather than a diagonal one. Switch to curved or straight style for unconstrained drag.
+
 **Right-click menu on a waypoint:**
 - **Remove waypoint** - delete just this bend point
 - **Tidy Up Link** - remove every waypoint whose perpendicular distance to the line through its neighbours is below 40 scene units. Iterates until stable, so a chain of barely-bent waypoints collapses fully. Use this to clean up "ugly accumulated midpoints" without losing meaningful bends.
