@@ -28,15 +28,27 @@ All packages include both the GUI application (`merisio`) and the CLI tool (`mer
 
 ### MCD Editor
 - Visual diagram editor for entities, associations, and links
-- Drag-and-drop positioning
-- Multi-selection and deletion
-- Cardinalities: (0,1), (0,N), (1,1), (1,N)
-- Link styles: Curved, Orthogonal, Straight
-- Toggle attribute visibility
+- MySQL Workbench-inspired layout: collapsible sidebar (minimap, project tree, properties panel) + central canvas + bottom output panel
+- Drag-and-drop positioning, multi-selection, rubber-band selection
+- Cardinalities: (0,1), (0,N), (1,1), (1,N) with inline editing
+- Link styles: Curved (Catmull-Rom smoothed), Orthogonal (L-routing), Straight
+- Toggle attribute visibility, customisable diagram colours
 - Zoom controls (25%–400%)
-- Customisable diagram colours
 - Export diagrams to SVG, PNG, or PDF
 - `--help` and `--version` flags
+
+### Editing Relation Links (v1.6.0)
+- **Draggable waypoints** — select a link to reveal handles; drag bend points to reshape, drag a segment midpoint to insert a new bend
+- **Magnetic snap** during drag (20 scene units), with orthogonal segment-axis-lock when the segment is clearly horizontal or vertical
+- **Tidy Up Link** — collapse near-collinear waypoints in one click (40-unit threshold, iterates until stable)
+- **Straighten Link** — wipe all waypoints; the link reverts to its auto-routed shape
+- **Draggable cardinality label** — slide the "1,N" / "0,1" box along the link's path; position survives save/reload
+- Smooth Catmull-Rom curves through every waypoint (C¹ continuity), centroid-aware bend direction so curves bow outward
+
+### Undo / Redo (v1.6.0)
+- Snapshot-based history of every modification (drag, edit, waypoint, label, colours, link style)
+- `Ctrl+Z` to undo, `Ctrl+Shift+Z` to redo
+- 100-entry bounded stack; opening or creating a project re-seeds history
 
 ### CLI Tool (`merisio-cli`)
 - Validate MCD models in CI pipelines
@@ -70,7 +82,7 @@ All packages include both the GUI application (`merisio`) and the CLI tool (`mer
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo dpkg -i merisio_1.3.1_amd64.deb
+sudo dpkg -i merisio_1.6.0_amd64.deb
 ```
 
 This installs both `/usr/bin/merisio` (GUI) and `/usr/bin/merisio-cli` (CLI).
@@ -93,8 +105,14 @@ Extract `Merisio-windows-x64.zip` and run `Merisio.exe` (GUI) or `merisio-cli.ex
 ```bash
 git clone https://github.com/AchrafSoltani/Merisio.git
 cd Merisio
-python3 -m venv venv
-source venv/bin/activate
+./run.sh                            # creates .venv on first run, then launches the GUI
+```
+
+`run.sh` forwards any arguments to `main.py`. For the CLI, use `.venv/bin/python cli.py <args>` after the first launch, or set up the venv manually:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 python main.py       # GUI
 python cli.py        # CLI
@@ -148,10 +166,14 @@ merisio-cli project.merisio export --format png -o diagram.png --scale 3.0
 | Ctrl+N | New Project |
 | Ctrl+O | Open Project |
 | Ctrl+S | Save Project |
-| Ctrl+1 | Dictionary Tab |
-| Ctrl+2 | MCD Tab |
-| Ctrl+3 | MLD Tab |
-| Ctrl+4 | SQL Tab |
+| Ctrl+Shift+S | Save As |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z | Redo |
+| Ctrl+B | Toggle Sidebar |
+| Ctrl+J | Toggle Output Panel |
+| Ctrl+1 | MCD Tab |
+| Ctrl+2 | MLD Tab |
+| F5 | Validate Model |
 | Delete | Delete Selected |
 | Ctrl+Scroll | Zoom In/Out |
 | Ctrl++ | Zoom In |

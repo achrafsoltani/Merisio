@@ -26,7 +26,20 @@ Print the version number and exit.
 .B MCD Editor
 Visual diagram editor for entities, associations, and links with
 drag-and-drop positioning, multi-selection, cardinalities (0,1), (0,N),
-(1,1), (1,N), and configurable link styles (curved, orthogonal, straight).
+(1,1), (1,N), and configurable link styles (curved with Catmull-Rom
+smoothing, orthogonal with L-routing, straight).
+.TP
+.B Link Editing
+Select a link to reveal draggable waypoint handles for reshaping the
+path, and segment-midpoint handles for inserting new bends. Magnetic
+snap during drag with orthogonal segment-axis-lock. Right-click menu
+to Remove waypoint, Tidy Up Link (collapse near-collinear waypoints),
+or Straighten Link (wipe all). The cardinality label is also
+draggable along the link's path.
+.TP
+.B Undo / Redo
+Snapshot-based history covering every modification. Use Ctrl+Z to
+undo and Ctrl+Shift+Z to redo. Bounded to the 100 most recent steps.
 .TP
 .B Data Dictionary
 Overview of all attributes across entities.
@@ -47,19 +60,25 @@ Options > Diagram Colours.
 .SH FILE FORMAT
 Projects are stored as JSON files with the
 .B .merisio
-extension (format version 2.1). A project file contains metadata, MCD
-definitions (entities, associations, links), MLD column overrides, and
-colour settings.
+extension (format version 2.2). A project file contains metadata, MCD
+definitions (entities, associations, links with optional waypoints and
+cardinality label positions), MLD column overrides, and colour
+settings. Older 2.1 files load with empty waypoints and the default
+label position (0.2).
 .SH KEYBOARD SHORTCUTS
 .TS
 l l.
 Ctrl+N	New Project
 Ctrl+O	Open Project
 Ctrl+S	Save Project
-Ctrl+1	Dictionary Tab
-Ctrl+2	MCD Tab
-Ctrl+3	MLD Tab
-Ctrl+4	SQL Tab
+Ctrl+Shift+S	Save As
+Ctrl+Z	Undo
+Ctrl+Shift+Z	Redo
+Ctrl+B	Toggle Sidebar
+Ctrl+J	Toggle Output Panel
+Ctrl+1	MCD Tab
+Ctrl+2	MLD Tab
+F5	Validate Model
 Delete	Delete Selected
 Ctrl+Scroll	Zoom In/Out
 Ctrl++	Zoom In

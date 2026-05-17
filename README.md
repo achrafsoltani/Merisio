@@ -12,10 +12,17 @@ A modern MERISE database modeling tool built with Python and PySide6.
   - Drag-and-drop positioning
   - Multi-selection and deletion
   - Cardinalities: (0,1), (0,N), (1,1), (1,N)
-  - Link styles: Curved, Orthogonal, Straight
+  - Link styles: Curved (Catmull-Rom smoothed), Orthogonal (L-routing), Straight
   - Toggle attribute visibility
   - Zoom controls with slider (25%-400%)
   - Customizable colors for entities, associations, and links
+- **Link Editing** *(v1.6.0)* - Reshape relation paths interactively
+  - Waypoint handles to drag bend points; segment-midpoint handles to insert new bends
+  - Magnetic snap during drag, orthogonal segment-axis-lock
+  - "Tidy Up Link" to collapse near-collinear waypoints, "Straighten Link" to wipe them all
+  - Draggable cardinality label position (stored as `card_t` in the file format)
+  - Curves bow outward away from the diagram centroid
+- **Undo / Redo** *(v1.6.0)* - Ctrl+Z / Ctrl+Shift+Z covering every modification (drag, edit, waypoints, labels, colours, link style); snapshot-based 100-entry history
 - **Left Sidebar** - MySQL Workbench-inspired collapsible panel (Ctrl+B)
   - Minimap: bird's eye diagram overview with click-to-navigate
   - Project Tree: entities and associations navigator with selection sync
@@ -36,13 +43,13 @@ A modern MERISE database modeling tool built with Python and PySide6.
   - Editable column names (right-click or double-click to rename)
   - Custom names saved in project and used in SQL generation
 - **SQL Generation** - PostgreSQL CREATE TABLE statements
-- **Project Management** - Save/load projects in `.merisio` JSON format
+- **Project Management** - Save/load projects in `.merisio` JSON format (file format v2.2)
 - **Options Menu** - Show/hide attributes, link style, diagram colors
 
 ## Screenshots
 
 ![MCD Editor](resources/screenshots/mcd-editor.png)
-*MCD Editor - First screenshot of Merisio v1.0.0 (January 21, 2026)*
+*MCD Editor (v1.5.0) — e-commerce example with sidebar, central canvas, and bottom output panel*
 
 ## Man Pages
 
@@ -89,7 +96,7 @@ Download the latest release from the [Releases](https://github.com/AchrafSoltani
 
 **From .deb package (Debian/Ubuntu):**
 ```bash
-sudo dpkg -i merisio_1.3.0_amd64.deb
+sudo dpkg -i merisio_1.6.0_amd64.deb
 ```
 This installs both `merisio` (GUI) and `merisio-cli` (CLI) to `/usr/bin/`.
 
