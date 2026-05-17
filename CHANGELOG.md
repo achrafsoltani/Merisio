@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] — v1.6.0
 
 ### Added
+- **Undo / Redo** — Ctrl+Z and Ctrl+Shift+Z in the Edit menu, status-bar feedback on each action. Snapshot-based: every modification pushes a `project.to_dict()` snapshot onto a bounded 100-entry stack, so it covers waypoint drags, label slides, field edits, colour changes — everything that flips `project.modified`. Opening or creating a project re-seeds history so undo can't cross into a previous session.
 - Draggable link geometry — select a link to reveal waypoint handles (drag to move a bend) and segment-midpoint handles (drag to insert a new waypoint). Constant on-screen pixel size at any zoom.
 - Magnetic snap during waypoint drag — within 20 scene units of the line through its neighbours, the cursor sticks to that line.
 - Orthogonal segment-axis-lock — when the dragged segment is clearly horizontal or vertical (≥3:1 aspect) on an orthogonal-style link, the cursor's non-perpendicular axis locks to the segment midpoint so the inserted waypoint produces a clean rectangular detour.

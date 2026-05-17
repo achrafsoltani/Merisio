@@ -196,6 +196,10 @@ The same Tidy Up / Straighten entries appear on the link's own right-click menu 
 
 **Moving the cardinality label.** Grab the "1,N" / "0,1" box and drag — it slides along the link's path, constrained so it never leaves the line. The position is stored as a fractional distance `card_t` (0 at the entity edge, 1 at the association edge) in the `.merisio` file, so it survives save/reload and tracks the link if entities are repositioned.
 
+### Undo / Redo
+
+The editor maintains an undo history of up to 100 recent changes. Every modification — adding or removing items, drag moves, attribute edits, cardinality changes, waypoint operations, label drags, colour changes — is captured automatically. Use `Ctrl+Z` (or **Edit → Undo**) to step back and `Ctrl+Shift+Z` (or **Edit → Redo**) to step forward. Opening or creating a project re-seeds history so undo can't cross into a previous session.
+
 ### Cardinalities
 
 | Cardinality | Meaning |
@@ -280,6 +284,8 @@ When launched without arguments, the graphical editor opens.
 | Ctrl+O | Open project |
 | Ctrl+S | Save project |
 | Ctrl+Shift+S | Save as |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z | Redo |
 | Ctrl+B | Toggle sidebar |
 | Ctrl+J | Toggle output panel |
 | F5 | Validate model |
