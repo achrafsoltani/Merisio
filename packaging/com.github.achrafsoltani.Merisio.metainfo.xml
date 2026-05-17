@@ -63,6 +63,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="1.6.0" date="2026-05-17">
+      <description>
+        <p>Draggable link geometry — reshape relation paths with waypoint handles, snap and tidy actions, and a draggable cardinality label. Catmull-Rom curve smoothing through waypoints and centroid-aware bend direction. Snapshot-based undo/redo with Ctrl+Z / Ctrl+Shift+Z covering every editor mutation. File format bumped to v2.2.</p>
+      </description>
+    </release>
     <release version="1.5.0" date="2026-03-25">
       <description>
         <p>Properties panel with Edit button and link cardinality editing. Native Qt widget rendering.</p>

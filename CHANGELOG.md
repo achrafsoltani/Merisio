@@ -5,7 +5,7 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — v1.6.0
+## [1.6.0] - 2026-05-17
 
 ### Added
 - **Undo / Redo** — Ctrl+Z and Ctrl+Shift+Z in the Edit menu, status-bar feedback on each action. Snapshot-based: every modification pushes a `project.to_dict()` snapshot onto a bounded 100-entry stack, so it covers waypoint drags, label slides, field edits, colour changes — everything that flips `project.modified`. Opening or creating a project re-seeds history so undo can't cross into a previous session.
