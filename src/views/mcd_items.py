@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QRectF, QPointF, QLineF
 from PySide6.QtGui import (
-    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPainterPath
+    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPainterPath, QPainterPathStroker
 )
 import math
 
@@ -567,6 +567,9 @@ class LinkItem(QGraphicsPathItem):
     # Wider zone for the explicit "Tidy Up" action. Snap prevents new ugliness;
     # tidy cleans up legacy waypoints the user wants gone, so it's more forgiving.
     TIDY_THRESHOLD = 40.0
+    # Effective click area around the stroked path. Wider than the 1 px visible
+    # pen so thin links are easy to grab without changing what's drawn.
+    HIT_WIDTH = 8.0
 
     def __init__(
         self,
@@ -909,6 +912,16 @@ class LinkItem(QGraphicsPathItem):
             if sig is not None:
                 sig.emit()
                 return
+
+    def shape(self) -> QPainterPath:
+        """Wider hit area than the visible 1 px stroke so thin links are easy to
+        click. Without this, the user has to land within 1 scene unit of the
+        path to select the link — fiddly at low zoom levels."""
+        stroker = QPainterPathStroker()
+        stroker.setWidth(self.HIT_WIDTH)
+        stroker.setCapStyle(Qt.RoundCap)
+        stroker.setJoinStyle(Qt.RoundJoin)
+        return stroker.createStroke(self.path())
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget = None):
         if self.isSelected():
