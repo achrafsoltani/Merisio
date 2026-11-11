@@ -167,3 +167,7 @@ cython_debug/
 
 # Java Legacy version (used for codeanalysis)
 java_legacy*.local.md
+
+# Local context files, never committed
+CLAUDE.local.md
+TRACKER.local.md
