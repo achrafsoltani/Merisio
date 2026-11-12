@@ -3,6 +3,7 @@
 from PySide6.QtCore import Qt, QRectF, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QGraphicsView, QLabel, QVBoxLayout, QWidget
+from shiboken6 import isValid
 
 
 class Minimap(QWidget):
@@ -91,7 +92,8 @@ class MinimapView(QGraphicsView):
 
     def eventFilter(self, obj, event):
         """Refresh minimap when canvas viewport updates."""
-        if obj == (self._canvas.viewport() if self._canvas else None):
+        # At shutdown Qt can still deliver events after the canvas's C++ object is gone.
+        if self._canvas is not None and isValid(self._canvas) and obj == self._canvas.viewport():
             if event.type() in (event.Type.Paint, event.Type.Resize):
                 self._fit_scene()
                 self.update()

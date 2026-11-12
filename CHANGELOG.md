@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Save As now writes `.merisio` files. Since v1.1.0 it gave new projects the extension `.asip`, which the Open dialog's filter hid ([#1](https://github.com/achrafsoltani/Merisio/issues/1)). The Open dialog now also lists `*.asip`, so projects saved that way can still be opened.
+- The minimap no longer prints a traceback when the application closes.
 
 ## [1.6.0] - 2026-05-17
 
