@@ -9,7 +9,9 @@ from PySide6.QtGui import QAction, QKeySequence, QIcon
 import os
 
 from ..models.project import Project
-from ..utils.constants import APP_NAME, APP_VERSION, FILE_FILTER, MSD_FILE_FILTER
+from ..utils.constants import (
+    APP_NAME, APP_VERSION, FILE_EXTENSION, FILE_FILTER, MSD_FILE_FILTER, OPEN_FILE_FILTER,
+)
 from ..utils.file_io import FileIO
 from ..controllers.mcd_controller import MCDController
 from ..controllers.project_history import ProjectHistory
@@ -618,7 +620,7 @@ class MainWindow(QMainWindow):
     def _on_open(self):
         if not self._check_save():
             return
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", FILE_FILTER)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", OPEN_FILE_FILTER)
         if file_path:
             project = FileIO.load_project(file_path)
             if project:
@@ -680,8 +682,8 @@ class MainWindow(QMainWindow):
     def _on_save_as(self) -> bool:
         file_path, _ = QFileDialog.getSaveFileName(self, "Save Project", "", FILE_FILTER)
         if file_path:
-            if not file_path.endswith(".asip"):
-                file_path += ".asip"
+            if not file_path.lower().endswith(FILE_EXTENSION):
+                file_path += FILE_EXTENSION
             basename = os.path.basename(file_path)
             self._project.name = os.path.splitext(basename)[0]
             if FileIO.save_project(self._project, file_path):

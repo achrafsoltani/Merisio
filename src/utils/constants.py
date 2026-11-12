@@ -4,6 +4,9 @@ APP_NAME = "Merisio"
 APP_VERSION = "1.6.0"
 FILE_EXTENSION = ".merisio"
 FILE_FILTER = "Merisio Projects (*.merisio);;All Files (*)"
+# The Open dialog also lists *.asip: Save As wrongly gave new projects that
+# extension in v1.1.0 to v1.6.0 (GitHub issue #1), so those files must stay findable.
+OPEN_FILE_FILTER = "Merisio Projects (*.merisio *.asip);;All Files (*)"
 MSD_FILE_EXTENSION = ".msd"
 MSD_FILE_FILTER = "MSD Files (*.msd);;All Files (*)"
 
