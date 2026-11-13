@@ -254,3 +254,91 @@ entity B {
         # Should still parse entity B despite error in A
         valid_entities = [e for e in result.entities if e.name == "B"]
         assert len(valid_entities) == 1
+
+
+class TestKeywordsAsNames:
+    """Keywords used as names must parse, not hang."""
+
+    @pytest.mark.parametrize("name", ["link", "Link", "entity", "association", "project", "PROJECT"])
+    def test_attribute_named_like_a_keyword(self, parser, name):
+        result = parser.parse(f"entity A {{\n    *id: INT\n    {name}: VARCHAR(50)\n}}")
+        assert not result.has_errors
+        assert [a.name for a in result.entities[0].attributes] == ["id", name]
+
+    def test_primary_key_named_like_a_keyword(self, parser):
+        result = parser.parse("entity A {\n    *link: INT\n}")
+        assert not result.has_errors
+        assert result.entities[0].attributes[0].is_primary_key
+
+    def test_entity_and_association_named_like_keywords(self, parser):
+        source = """entity Project {
+    *id: INT
+}
+entity Link {
+    *id: INT
+}
+association Entity {
+}
+link Project (1,N) Entity
+link Link (0,N) Entity"""
+        result = parser.parse(source)
+        assert not result.has_errors
+        assert [e.name for e in result.entities] == ["Project", "Link"]
+        assert [a.name for a in result.associations] == ["Entity"]
+        assert [(l.entity_name, l.association_name) for l in result.links] == [
+            ("Project", "Entity"), ("Link", "Entity")]
+
+    def test_entity_named_project_does_not_alter_the_next_block(self, parser):
+        source = "entity Project {\n    *id: INT\n}\nentity B {\n    *id: INT\n    label: TEXT\n}"
+        result = parser.parse(source)
+        assert not result.has_errors
+        assert [a.data_type for a in result.entities[1].attributes] == ["INT", "TEXT"]
+
+    def test_project_block_still_parses(self, parser):
+        result = parser.parse("project {\n    name: Shop\n}\nentity A {\n    *id: INT\n}")
+        assert not result.has_errors
+        assert result.metadata.name == "Shop"
+
+
+class TestTermination:
+    """Every input must terminate, with a bounded number of errors."""
+
+    def test_missing_brace_before_next_entity(self, parser):
+        source = "entity A {\n    *id: INT\nentity B {\n    *id: INT\n}"
+        result = parser.parse(source)
+        assert any("missing '}' to close entity 'A'" in e.message for e in result.errors)
+        assert [e.name for e in result.entities] == ["B"]
+
+    def test_missing_brace_before_link(self, parser):
+        source = "entity A {\n    *id: INT\nassociation R {\n}\nlink A (1,N) R"
+        result = parser.parse(source)
+        assert any("missing '}' to close entity 'A'" in e.message for e in result.errors)
+        assert len(result.links) == 1
+
+    def test_name_missing_at_end_of_line_does_not_swallow_next_statement(self, parser):
+        source = "entity A {\n    *id: INT\n}\nassociation R {\n}\nlink A (1,N)\nentity B {\n    *id: INT\n}"
+        result = parser.parse(source)
+        assert result.has_errors
+        assert [e.name for e in result.entities] == ["A", "B"]
+
+    def test_error_count_is_capped(self, parser):
+        from src.msd.parser import MAX_ERRORS
+        source = "entity A {\n" + "    x: BLOB\n" * (3 * MAX_ERRORS) + "}"
+        result = parser.parse(source)
+        assert len(result.errors) == MAX_ERRORS + 1
+        assert "too many errors" in result.errors[-1].message
+
+    def test_random_inputs_terminate(self, parser):
+        """Short random token soups: a parser that stops making progress would
+        hit the error cap, which no input this short can reach legitimately."""
+        import random
+        vocabulary = [
+            "entity", "Entity", "association", "link", "Link", "project", "PROJECT",
+            "{", "}", "(", ")", ":", ",", "*", "\n", "\n", "\n",
+            "A", "B", "R", "id", "INT", "VARCHAR", "N", "0", "1", "50", "# note",
+        ]
+        rng = random.Random(7)
+        for _ in range(3000):
+            source = " ".join(rng.choice(vocabulary) for _ in range(rng.randint(1, 30)))
+            result = parser.parse(source)
+            assert not any("too many errors" in e.message for e in result.errors), source

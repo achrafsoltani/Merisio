@@ -1,20 +1,22 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
+from ..utils.constants import DATA_TYPES as _DATA_TYPES, SIZED_DATA_TYPES
 from .errors import MSDError
 from .lexer import MSDLexer, Token, TokenType
 
-# Valid data types (uppercase canonical forms)
-DATA_TYPES = {
-    "INT", "BIGINT", "SMALLINT",
-    "VARCHAR", "CHAR", "TEXT",
-    "BOOLEAN",
-    "DATE", "TIME", "TIMESTAMP",
-    "DECIMAL", "FLOAT", "DOUBLE",
-}
+# Valid data types (uppercase canonical forms), shared with the editor
+DATA_TYPES = frozenset(_DATA_TYPES)
 
 # Types that accept a size parameter
-SIZED_TYPES = {"VARCHAR", "CHAR", "DECIMAL"}
+SIZED_TYPES = frozenset(SIZED_DATA_TYPES)
+
+# Keywords may also serve as names (an attribute called "link", an entity called
+# "Project"): the parser decides from the context which one a keyword token is.
+KEYWORD_TYPES = (TokenType.PROJECT, TokenType.ENTITY, TokenType.ASSOCIATION, TokenType.LINK)
+
+# Parsing stops after this many errors, so that no input can make it run away.
+MAX_ERRORS = 100
 
 
 @dataclass
@@ -86,14 +88,20 @@ class MSDParser:
         self._filename = filename
         self._result = ParseResult(filename=filename)
         self._result.errors.extend(lex_errors)
+        self._error_count = 0
 
-        self._skip_newlines()
-
-        while not self._at_end():
-            try:
-                self._parse_top_level()
-            except _ParsePanic:
-                self._recover_to_top_level()
+        try:
+            self._skip_newlines()
+            while not self._at_end():
+                start = self._pos
+                try:
+                    self._parse_top_level()
+                except _ParsePanic:
+                    self._recover_to_top_level()
+                if self._pos == start:
+                    self._advance()  # never loop without consuming input
+        except _TooManyErrors:
+            pass
 
         return self._result
 
@@ -131,7 +139,7 @@ class MSDParser:
             if self._check(TokenType.RBRACE):
                 break
 
-            key_tok = self._expect(TokenType.IDENTIFIER)
+            key_tok = self._expect_name()
             self._expect(TokenType.COLON)
 
             # Value is captured as STRING_VALUE by the lexer
@@ -158,57 +166,43 @@ class MSDParser:
 
     def _parse_entity_block(self):
         """Parse: entity Name { attributes... }"""
-        kw_tok = self._expect(TokenType.ENTITY)
-        name_tok = self._expect(TokenType.IDENTIFIER)
+        self._expect(TokenType.ENTITY)
+        name_tok = self._expect_name()
         self._skip_newlines()
         self._expect(TokenType.LBRACE)
-        self._skip_newlines()
 
         entity = ParsedEntity(name=name_tok.value, line=name_tok.line, column=name_tok.column)
-
-        while not self._check(TokenType.RBRACE) and not self._at_end():
-            self._skip_newlines()
-            if self._check(TokenType.RBRACE):
-                break
-            try:
-                attr = self._parse_attribute()
-                entity.attributes.append(attr)
-            except _ParsePanic:
-                self._recover_to_brace_or_keyword()
-                if self._check(TokenType.RBRACE):
-                    break
-
-            self._skip_newlines()
-
-        self._expect(TokenType.RBRACE)
+        self._parse_attribute_list(entity.attributes)
+        self._expect_closing_brace("entity", name_tok.value)
         self._result.entities.append(entity)
 
     def _parse_association_block(self):
         """Parse: association Name { attributes... }"""
-        kw_tok = self._expect(TokenType.ASSOCIATION)
-        name_tok = self._expect(TokenType.IDENTIFIER)
+        self._expect(TokenType.ASSOCIATION)
+        name_tok = self._expect_name()
         self._skip_newlines()
         self._expect(TokenType.LBRACE)
-        self._skip_newlines()
 
         assoc = ParsedAssociation(name=name_tok.value, line=name_tok.line, column=name_tok.column)
+        self._parse_attribute_list(assoc.attributes)
+        self._expect_closing_brace("association", name_tok.value)
+        self._result.associations.append(assoc)
 
-        while not self._check(TokenType.RBRACE) and not self._at_end():
+    def _parse_attribute_list(self, attributes: List[ParsedAttribute]):
+        """Parse attribute lines up to the closing brace, which is left for the caller."""
+        while True:
             self._skip_newlines()
-            if self._check(TokenType.RBRACE):
-                break
+            if self._at_end() or self._check(TokenType.RBRACE) or self._at_statement_keyword():
+                # A keyword that opens a statement means the closing brace is missing:
+                # the caller reports it and parsing resumes at that statement.
+                return
+            start = self._pos
             try:
-                attr = self._parse_attribute()
-                assoc.attributes.append(attr)
+                attributes.append(self._parse_attribute())
             except _ParsePanic:
                 self._recover_to_brace_or_keyword()
-                if self._check(TokenType.RBRACE):
-                    break
-
-            self._skip_newlines()
-
-        self._expect(TokenType.RBRACE)
-        self._result.associations.append(assoc)
+                if self._pos == start:
+                    self._advance()  # never loop without consuming input
 
     def _parse_attribute(self) -> ParsedAttribute:
         """Parse: [*]name: TYPE[(size)]"""
@@ -217,7 +211,7 @@ class MSDParser:
             self._advance()
             is_pk = True
 
-        name_tok = self._expect(TokenType.IDENTIFIER)
+        name_tok = self._expect_name()
         self._expect(TokenType.COLON)
 
         data_type, size = self._parse_type_expr()
@@ -233,7 +227,7 @@ class MSDParser:
 
     def _parse_type_expr(self) -> Tuple[str, Optional[int]]:
         """Parse: TYPE or TYPE(size)"""
-        type_tok = self._expect(TokenType.IDENTIFIER)
+        type_tok = self._expect_name()
         type_name = type_tok.value.upper()
 
         if type_name not in DATA_TYPES:
@@ -263,11 +257,11 @@ class MSDParser:
     def _parse_link_statement(self):
         """Parse: link EntityName (min,max) AssociationName"""
         kw_tok = self._expect(TokenType.LINK)
-        entity_tok = self._expect(TokenType.IDENTIFIER)
+        entity_tok = self._expect_name()
 
         card_min, card_max = self._parse_cardinality()
 
-        assoc_tok = self._expect(TokenType.IDENTIFIER)
+        assoc_tok = self._expect_name()
 
         link = ParsedLink(
             entity_name=entity_tok.value,
@@ -322,9 +316,12 @@ class MSDParser:
     def _at_end(self) -> bool:
         return self._peek().type == TokenType.EOF
 
-    def _skip_newlines(self):
+    def _skip_newlines(self) -> bool:
+        """Skip newline tokens; return True if any were skipped."""
+        start = self._pos
         while not self._at_end() and self._peek().type == TokenType.NEWLINE:
             self._pos += 1
+        return self._pos != start
 
     def _expect(self, *types: TokenType) -> Token:
         self._skip_newlines()
@@ -334,6 +331,39 @@ class MSDParser:
 
         expected = " or ".join(t.name for t in types)
         self._error(f"expected {expected}, got {tok.type.name} ('{tok.value}')", tok)
+        raise _ParsePanic()
+
+    def _expect_name(self) -> Token:
+        """Expect a name: an identifier, or a keyword used as a name.
+
+        A keyword counts as a name only on the same line as what precedes it, so
+        that a name missing at the end of a line does not swallow the next statement.
+        """
+        on_new_line = self._skip_newlines()
+        tok = self._peek()
+        if tok.type == TokenType.IDENTIFIER or (tok.type in KEYWORD_TYPES and not on_new_line):
+            return self._advance()
+
+        self._error(f"expected a name, got {tok.type.name} ('{tok.value}')", tok)
+        raise _ParsePanic()
+
+    def _at_statement_keyword(self) -> bool:
+        """True at a keyword that opens a statement rather than naming an attribute."""
+        tok = self._peek()
+        if tok.type not in KEYWORD_TYPES:
+            return False
+        # The token list always ends with EOF, so a keyword is never the last token.
+        if self._tokens[self._pos + 1].type == TokenType.COLON:
+            return False  # an attribute such as "link: VARCHAR(50)"
+        return self._pos == 0 or self._tokens[self._pos - 1].type == TokenType.NEWLINE
+
+    def _expect_closing_brace(self, kind: str, name: str):
+        """Consume the '}' that closes a block, or report it missing."""
+        self._skip_newlines()
+        if self._check(TokenType.RBRACE):
+            self._advance()
+            return
+        self._error(f"missing '}}' to close {kind} '{name}'", self._peek())
         raise _ParsePanic()
 
     # ── Error handling ──
@@ -346,6 +376,16 @@ class MSDParser:
             filename=self._filename,
             severity=severity,
         ))
+        if severity == "error":
+            self._error_count += 1
+            if self._error_count >= MAX_ERRORS:
+                self._result.errors.append(MSDError(
+                    message=f"too many errors ({MAX_ERRORS}), parsing stopped",
+                    line=token.line,
+                    column=token.column,
+                    filename=self._filename,
+                ))
+                raise _TooManyErrors()
 
     def _recover_to_top_level(self):
         """Panic-mode recovery: skip to next top-level keyword or closing brace."""
@@ -378,4 +418,9 @@ class MSDParser:
 
 class _ParsePanic(Exception):
     """Internal exception for panic-mode error recovery."""
+    pass
+
+
+class _TooManyErrors(Exception):
+    """Internal exception that ends parsing once MAX_ERRORS errors are reported."""
     pass

@@ -143,7 +143,12 @@ class MSDLexer:
                     keyword_type = KEYWORDS.get(word.lower())
                     if keyword_type:
                         tokens.append(Token(keyword_type, word, line_num, start + 1))
-                        if keyword_type == TokenType.PROJECT:
+                        # Only a `project` that opens a top-level statement starts the
+                        # metadata block; elsewhere the word is a name, such as an
+                        # entity called "Project".
+                        opens_statement = len(tokens) == 1 or tokens[-2].type in (
+                            TokenType.NEWLINE, TokenType.RBRACE)
+                        if keyword_type == TokenType.PROJECT and brace_depth == 0 and opens_statement:
                             in_project_block = True
                     else:
                         tokens.append(Token(TokenType.IDENTIFIER, word, line_num, start + 1))

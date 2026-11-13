@@ -27,6 +27,9 @@ DATA_TYPES = [
     "DOUBLE",
 ]
 
+# Data types that take a size, as in VARCHAR(50)
+SIZED_DATA_TYPES = ("VARCHAR", "CHAR", "DECIMAL")
+
 # Cardinality values
 CARDINALITY_MIN = ["0", "1"]
 CARDINALITY_MAX = ["1", "N"]
