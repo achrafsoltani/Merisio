@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Project files are now validated when they are opened: each attribute's type must be one of Merisio's data types and its size a positive integer. A crafted `.merisio` file could previously place arbitrary SQL statements in the generated script, and `validate` did not notice. Such files are now refused, with the reason.
+
 ### Fixed
 - Save As now writes `.merisio` files. Since v1.1.0 it gave new projects the extension `.asip`, which the Open dialog's filter hid ([#1](https://github.com/achrafsoltani/Merisio/issues/1)). The Open dialog now also lists `*.asip`, so projects saved that way can still be opened.
 - The MSD parser no longer hangs, consuming memory without limit, on a missing `}` or on a keyword used as a name. The keywords `project`, `entity`, `association` and `link` can now name attributes, entities and associations, a missing `}` is reported as such, and parsing stops after 100 errors.
+- Opening an invalid project now explains why it failed, in the editor and in `merisio-cli`.
 - The minimap no longer prints a traceback when the application closes.
 
 ## [1.6.0] - 2026-05-17

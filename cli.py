@@ -8,18 +8,17 @@ import sys
 
 def load_project(file_path):
     """Load a .merisio project file, exiting on failure."""
-    from src.utils.file_io import FileIO
+    from src.utils.file_io import FileIO, ProjectLoadError
 
     if not os.path.isfile(file_path):
         print(f"Error: file not found: {file_path}", file=sys.stderr)
         sys.exit(2)
 
-    project = FileIO.load_project(file_path)
-    if project is None:
-        print(f"Error: failed to load project: {file_path}", file=sys.stderr)
+    try:
+        return FileIO.read_project(file_path)
+    except ProjectLoadError as e:
+        print(f"Error: failed to load project: {file_path}: {e}", file=sys.stderr)
         sys.exit(2)
-
-    return project
 
 
 def cmd_info(args):

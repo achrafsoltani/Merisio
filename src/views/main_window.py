@@ -12,7 +12,7 @@ from ..models.project import Project
 from ..utils.constants import (
     APP_NAME, APP_VERSION, FILE_EXTENSION, FILE_FILTER, MSD_FILE_FILTER, OPEN_FILE_FILTER,
 )
-from ..utils.file_io import FileIO
+from ..utils.file_io import FileIO, ProjectLoadError
 from ..controllers.mcd_controller import MCDController
 from ..controllers.project_history import ProjectHistory
 from .mcd_canvas import MCDCanvas
@@ -622,12 +622,13 @@ class MainWindow(QMainWindow):
             return
         file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", OPEN_FILE_FILTER)
         if file_path:
-            project = FileIO.load_project(file_path)
-            if project:
-                self._set_project(project)
-                self._update_status(f"Opened: {file_path}")
-            else:
-                QMessageBox.critical(self, "Error", f"Failed to open project:\n{file_path}")
+            try:
+                project = FileIO.read_project(file_path)
+            except ProjectLoadError as e:
+                QMessageBox.critical(self, "Error", f"Failed to open project:\n{file_path}\n\n{e}")
+                return
+            self._set_project(project)
+            self._update_status(f"Opened: {file_path}")
 
     def _on_import_msd(self):
         if not self._check_save():
