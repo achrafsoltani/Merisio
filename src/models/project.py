@@ -7,7 +7,7 @@ from .attribute import Attribute
 
 
 class Project:
-    """Container for an entire AnalyseSI project."""
+    """Container for an entire Merisio project."""
 
     VERSION = "2.2"  # Adds Link.waypoints for user-shaped relation paths
 
