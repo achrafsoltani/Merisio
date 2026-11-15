@@ -12,9 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Save As now writes `.merisio` files. Since v1.1.0 it gave new projects the extension `.asip`, which the Open dialog's filter hid ([#1](https://github.com/achrafsoltani/Merisio/issues/1)). The Open dialog now also lists `*.asip`, so projects saved that way can still be opened.
+- The generated SQL now runs on PostgreSQL. Names that PostgreSQL reserves, such as `order` or `user`, are quoted; foreign keys are added once every table exists, so the order of the tables no longer matters, even when two tables reference each other; and `DOUBLE` is written `DOUBLE PRECISION`. The bundled e-commerce example previously created only 5 of its 8 tables.
 - The MSD parser no longer hangs, consuming memory without limit, on a missing `}` or on a keyword used as a name. The keywords `project`, `entity`, `association` and `link` can now name attributes, entities and associations, a missing `}` is reported as such, and parsing stops after 100 errors.
 - Opening an invalid project now explains why it failed, in the editor and in `merisio-cli`.
 - The minimap no longer prints a traceback when the application closes.
+
+### Changed
+- Foreign keys are generated as `ALTER TABLE … ADD FOREIGN KEY` statements after the tables, instead of inside `CREATE TABLE`.
 
 ## [1.6.0] - 2026-05-17
 
