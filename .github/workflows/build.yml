@@ -209,6 +209,22 @@ jobs:
           name: merisio-snap
           path: ${{ steps.snapcraft.outputs.snap }}
 
+  # Proves that the Flatpak manifest builds; the bundle is kept as a workflow artifact.
+  build-flatpak:
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.11
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: merisio.flatpak
+          manifest-path: packaging/com.github.achrafsoltani.Merisio.yml
+
   release:
     # Snap is intentionally NOT in `needs` — a snap-build failure should not
     # block the GitHub Release of Linux + Windows artifacts. The snap is then

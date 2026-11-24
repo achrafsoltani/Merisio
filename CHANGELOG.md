@@ -16,11 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The MSD parser no longer hangs, consuming memory without limit, on a missing `}` or on a keyword used as a name. The keywords `project`, `entity`, `association` and `link` can now name attributes, entities and associations, a missing `}` is reported as such, and parsing stops after 100 errors.
 - Opening an invalid project now explains why it failed, in the editor and in `merisio-cli`.
 - The minimap no longer prints a traceback when the application closes.
+- The Flatpak manifest, which was not valid YAML and used a source type that flatpak-builder does not support, now builds on Flathub's PySide base app with the KDE 6.11 runtime.
 
 ### Changed
 - Foreign keys are generated as `ALTER TABLE … ADD FOREIGN KEY` statements after the tables, instead of inside `CREATE TABLE`.
 - The release archives and the `.deb` package now include the GPL v2 licence text (`LICENSE`).
-- Continuous integration runs the test suite, including the generated SQL on PostgreSQL 18, before building, and uses the Node 24 versions of its actions.
+- Continuous integration runs the test suite, including the generated SQL on PostgreSQL 18, before building, test-builds the Flatpak, and uses the Node 24 versions of its actions.
 
 ## [1.6.0] - 2026-05-17
 
