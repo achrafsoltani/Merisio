@@ -44,7 +44,7 @@ jobs:
           mkdir -p Merisio-linux-x64
           cp dist/Merisio Merisio-linux-x64/
           cp dist/merisio-cli Merisio-linux-x64/
-          cp README.md Merisio-linux-x64/
+          cp README.md LICENSE Merisio-linux-x64/
           cp packaging/merisio.desktop Merisio-linux-x64/
           cp resources/icons/app_icon.png Merisio-linux-x64/
           cp -r man Merisio-linux-x64/
@@ -57,6 +57,7 @@ jobs:
           mkdir -p merisio-deb/usr/share/applications
           mkdir -p merisio-deb/usr/share/icons/hicolor/256x256/apps
           mkdir -p merisio-deb/usr/share/man/man1
+          mkdir -p merisio-deb/usr/share/doc/merisio
 
           cat > merisio-deb/DEBIAN/control << EOF
           Package: merisio
@@ -88,6 +89,8 @@ jobs:
 
           cp man/merisio.1 merisio-deb/usr/share/man/man1/merisio.1
           cp man/merisio-cli.1 merisio-deb/usr/share/man/man1/merisio-cli.1
+
+          cp LICENSE merisio-deb/usr/share/doc/merisio/copyright
 
           cat > merisio-deb/usr/share/applications/merisio.desktop << EOF
           [Desktop Entry]
@@ -141,6 +144,7 @@ jobs:
           copy dist\Merisio.exe Merisio-windows-x64\
           copy dist\merisio-cli.exe Merisio-windows-x64\
           copy README.md Merisio-windows-x64\
+          copy LICENSE Merisio-windows-x64\
           Compress-Archive -Path Merisio-windows-x64 -DestinationPath Merisio-windows-x64.zip
 
       - name: Upload Windows artifacts

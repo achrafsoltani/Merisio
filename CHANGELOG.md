@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Foreign keys are generated as `ALTER TABLE … ADD FOREIGN KEY` statements after the tables, instead of inside `CREATE TABLE`.
+- The release archives and the `.deb` package now include the GPL v2 licence text (`LICENSE`).
 
 ## [1.6.0] - 2026-05-17
 
