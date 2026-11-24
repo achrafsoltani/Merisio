@@ -5,7 +5,7 @@ All notable changes to Merisio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.1] - 2026-11-24
 
 ### Security
 - Project files are now validated when they are opened: each attribute's type must be one of Merisio's data types and its size a positive integer. A crafted `.merisio` file could previously place arbitrary SQL statements in the generated script, and `validate` did not notice. Such files are now refused, with the reason.
@@ -165,6 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux desktop integration
 - Keyboard shortcuts (Ctrl+1-4 for tabs, Ctrl+N/O/S for file operations)
 
+[1.6.1]: https://github.com/AchrafSoltani/Merisio/compare/v1.6.0...v1.6.1
+[1.6.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.3...v1.5.0
 [1.4.3]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/AchrafSoltani/Merisio/compare/v1.4.1...v1.4.2

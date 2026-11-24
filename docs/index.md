@@ -82,7 +82,7 @@ All packages include both the GUI application (`merisio`) and the CLI tool (`mer
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo dpkg -i merisio_1.6.0_amd64.deb
+sudo dpkg -i merisio_1.6.1_amd64.deb
 ```
 
 This installs both `/usr/bin/merisio` (GUI) and `/usr/bin/merisio-cli` (CLI).

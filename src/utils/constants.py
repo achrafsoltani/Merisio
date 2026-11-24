@@ -1,7 +1,7 @@
 # Application constants
 
 APP_NAME = "Merisio"
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 FILE_EXTENSION = ".merisio"
 FILE_FILTER = "Merisio Projects (*.merisio);;All Files (*)"
 # The Open dialog also lists *.asip: Save As wrongly gave new projects that

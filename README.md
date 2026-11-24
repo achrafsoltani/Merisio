@@ -2,7 +2,7 @@
 
 A modern MERISE database modeling tool built with Python and PySide6.
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue)
+![Version](https://img.shields.io/badge/version-1.6.1-blue)
 ![License](https://img.shields.io/badge/license-GPL%20v2-green)
 ![Python](https://img.shields.io/badge/python-3.11+-yellow)
 
@@ -96,7 +96,7 @@ Download the latest release from the [Releases](https://github.com/AchrafSoltani
 
 **From .deb package (Debian/Ubuntu):**
 ```bash
-sudo dpkg -i merisio_1.6.0_amd64.deb
+sudo dpkg -i merisio_1.6.1_amd64.deb
 ```
 This installs both `merisio` (GUI) and `merisio-cli` (CLI) to `/usr/bin/`.
 
